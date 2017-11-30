@@ -1,7 +1,7 @@
 class Spawn extends classes.Basic{ // eslint-disable-line no-unused-vars
     constructor(id){
         super(id);
-        this._roles = [];
+        this._queue = [];
     }
     get name(){
         return this.me.name;
@@ -24,14 +24,13 @@ class Spawn extends classes.Basic{ // eslint-disable-line no-unused-vars
     get hitsPercent(){
         return ((this.hits / this.hitsMax) * 100).toFixed();
     }
-    get roles(){
-        return this._roles;
+    get queue(){
+        return this._queue;
     }
-    addRole(role){
-        this._roles = _.union(this._roles, role);
-        return this.roles;
+    spawn(role){
+        this._queue.push(role);
     }
     run(){
-        // @todo ensure population
+        // @todo spawn from queue
     }
 };
