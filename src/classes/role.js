@@ -43,6 +43,9 @@ class Role{ // eslint-disable-line no-unused-vars
     get cost(){
         return _.reduce(this.body, (n, part) => n + BODYPART_COST[part], 0);
     }
+    get renewCost(){
+        return Math.ceil(this.cost / 2.5 / this.body.length);
+    }
     get canSpawn(){
         return _.reduce(this.energyStructures, (n, s) => n + s.energy, 0) < this.cost;
     }

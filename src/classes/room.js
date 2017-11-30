@@ -66,4 +66,9 @@ class Room extends classes.Basic{ // eslint-disable-line no-unused-vars
         this._spawns = [];
         this._sources = [];
     }
+    run(){
+        this.spawns.forEach(s => s.run());
+        this.sources.forEach(s => s.run());
+        this.creeps.forEach(c => c.run());
+    }
 };

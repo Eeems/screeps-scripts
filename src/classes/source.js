@@ -11,4 +11,7 @@ class Source extends classes.Basic{ // eslint-disable-line no-unused-vars
     get energyPercent(){
         return ((this.energy / this.energyCapacity) * 100).toFixed();
     }
+    run(){
+        // @todo handle checking assignments
+    }
 };

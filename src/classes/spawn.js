@@ -31,4 +31,7 @@ class Spawn extends classes.Basic{ // eslint-disable-line no-unused-vars
         this._roles = _.union(this._roles, role);
         return this.roles;
     }
+    run(){
+        // @todo ensure population
+    }
 };

@@ -38,7 +38,7 @@ class Basic{ // eslint-disable-line no-unused-vars
             _.each(Memory._class_instances, (instance, id) => {
                 if(!instance){
                     classes.Basic._removeInstance(id);
-                }if(instance instanceof Object){
+                }if(!instance.destructor){ // Not a class derived from classes.Basic
                     if(instance._classname){
                         instance = _.defaults(new classes[instance._classname](id), instance);
                         if(instance.cache){
@@ -51,23 +51,11 @@ class Basic{ // eslint-disable-line no-unused-vars
             });
         }
     }
-    static getMe(me){
-        if(!Memory._class_instances){
-            Memory._class_instances = {};
-        }
-        return Memory._class_instances[me.id] || false;
-    }
     static getById(id){
         if(!Memory._class_instances){
             Memory._class_instances = {};
         }
         return Memory._class_instances[id] || false;
-    }
-    static removeMe(me){
-        let instance = classes.Basic.getMe(me);
-        if(instance){
-            instance.destructor();
-        }
     }
     static removeById(id){
         let instance = classes.Basic.getById(id);

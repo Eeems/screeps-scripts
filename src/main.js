@@ -8,24 +8,22 @@ _.each(classes, (c) => {
 _.each(roles, (r) => {
     profiler.registerClass(r, 'role.' + r.constructor.name);
 });
+classes.Basic.cacheInstances();
 module.exports.loop = function(){
     profiler.wrap(function(){
-        if(!Memory._class_instances){
-            Memory._class_instances = {};
-        }
-        classes.Basic.cacheInstances();
         _.each(Memory.creeps, (creep, name) => {
             if(!Game.creeps[name]){
                 delete Memory.creeps[name];
                 classes.Creep.removeById(creep.id);
             }
         });
-        _.each(_.keys(Game.rooms), room => {
-            if(!classes.Room.getById(room)){
-                console.log('Detected new room: ' + room);
-                new classes.Room(room); // eslint-disable-line no-new
+        _.each(_.keys(Game.rooms), name => {
+            let room = classes.Room.getById(name);
+            if(!room){
+                console.log('Detected new room: ' + name);
+                room = new classes.Room(name);
             }
+            room.run();
         });
-        // @todo do work
     });
 };
