@@ -10,6 +10,9 @@ _.each(roles, (r) => {
 });
 module.exports.loop = function(){
     profiler.wrap(function(){
+        if(!Memory._class_instances){
+            Memory._class_instances = {};
+        }
         classes.Basic.cacheInstances();
         _.each(Memory.creeps, (creep, name) => {
             if(!Game.creeps[name]){
@@ -17,9 +20,9 @@ module.exports.loop = function(){
                 classes.Creep.removeById(creep.id);
             }
         });
-        _.each(Game.rooms, room => {
-            if(!classes.Room.getMe(room)){
-                console.log('Detected new room: ' + room.name);
+        _.each(_.keys(Game.rooms), room => {
+            if(!classes.Room.getById(room)){
+                console.log('Detected new room: ' + room);
                 new classes.Room(room); // eslint-disable-line no-new
             }
         });

@@ -1,14 +1,12 @@
 class Basic{ // eslint-disable-line no-unused-vars
-    constructor(me){
-        this._id = me.id || me.name;
+    constructor(id){
+        this._id = id;
         this._classname = this.constructor.name;
         classes.Basic._addInstance(this);
     }
     get me(){
         if(this.id){
             return Game.getObjectById(this.id) || Game.rooms[this.id];
-        }else{
-            this.destructor();
         }
     }
     get id(){
@@ -22,65 +20,48 @@ class Basic{ // eslint-disable-line no-unused-vars
     }
     static _addInstance(instance){
         if(!Memory._class_instances){
-            Memory._class_instances = [];
+            Memory._class_instances = {};
         }
-        Memory._class_instances = _.union(Memory._class_instances, [instance]);
+        Memory._class_instances[instance.id] = instance;
     }
     static _removeInstance(instance){
         if(!Memory._class_instances){
-            Memory._class_instances = [];
+            Memory._class_instances = {};
         }else{
-            Memory._class_instances = _.difference(Memory._class_instances, [instance]);
+            delete Memory._class_instances[instance.id];
         }
     }
     static cacheInstances(){
         if(!Memory._class_instances){
-            Memory._class_instances = [];
+            Memory._class_instances = {};
         }else{
-            _.each(Memory._class_instances, (instance, i) => {
-                if(instance){
-                    console.log(instance);
-                    if(instance.destructor === undefined){
-                        if(instance._classname){
-                            console.log(`${instance._classname}#${instance._id}`);
-                            // instance = _.defaults(new classes[instance._classname]({
-                            //     id: instance._id
-                            // }), instance);
-                            Memory._class_instances.splice(i, 1);
-                            if(instance.cache){
-                                instance.cache();
-                            }
-                        }else{
-                            classes.Basic._removeInstance(instance);
+            _.each(Memory._class_instances, (instance, id) => {
+                if(!instance){
+                    classes.Basic._removeInstance(id);
+                }if(instance instanceof Object){
+                    if(instance._classname){
+                        instance = _.defaults(new classes[instance._classname](id), instance);
+                        if(instance.cache){
+                            instance.cache();
                         }
-                    }else if(!instance.me){
-                        instance.destructor();
+                    }else{
+                        classes.Basic._removeInstance(id);
                     }
-                }else{
-                    Memory._class_instances.splice(i, 1);
                 }
             });
         }
     }
     static getMe(me){
         if(!Memory._class_instances){
-            Memory._class_instances = [];
+            Memory._class_instances = {};
         }
-        let instances = _.filter(Memory._class_instances, i => i.me === me);
-        if(instances.length){
-            return instances[0];
-        }
-        return false;
+        return Memory._class_instances[me.id] || false;
     }
     static getById(id){
         if(!Memory._class_instances){
-            Memory._class_instances = [];
+            Memory._class_instances = {};
         }
-        let instances = _.filter(Memory._class_instances, i => i.id === id);
-        if(instances.length){
-            return instances[0];
-        }
-        return false;
+        return Memory._class_instances[id] || false;
     }
     static removeMe(me){
         let instance = classes.Basic.getMe(me);

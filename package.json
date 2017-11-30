@@ -1,6 +1,6 @@
 {
   "scripts": {
-     "watch": "grunt && grunt watch"
+    "watch": "grunt && grunt watch"
   },
   "devDependencies": {
     "grunt": "^1.0.1",

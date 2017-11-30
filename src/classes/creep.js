@@ -1,6 +1,6 @@
 class Creep extends classes.Basic{ // eslint-disable-line no-unused-vars
-    constructor(me, role){
-        super(me);
+    constructor(id, role){
+        super(id);
         this.role = role;
     }
     get name(){

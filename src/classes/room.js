@@ -1,6 +1,6 @@
 class Room extends classes.Basic{ // eslint-disable-line no-unused-vars
-    constructor(me){
-        super(me);
+    constructor(name){
+        super(name);
         this.uncache();
     }
     get name(){
@@ -58,7 +58,7 @@ class Room extends classes.Basic{ // eslint-disable-line no-unused-vars
                 initName = name.substr(0, 1).toUpperCase() + name.substr(1),
                 cached = _.map(this[pluralName], i => i.me),
                 items = this.me.find(FIND_MY_SPAWNS, i => !~cached.indexOf(i));
-            this['_' + pluralName] = _.union(this[pluralName], _.map(items, i => new classes[initName](i)));
+            this['_' + pluralName] = _.union(this[pluralName], _.map(items, i => new classes[initName](i.id)));
         }
     }
     uncache(){

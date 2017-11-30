@@ -1,6 +1,6 @@
 class Spawn extends classes.Basic{ // eslint-disable-line no-unused-vars
-    constructor(me){
-        super(me);
+    constructor(id){
+        super(id);
         this._roles = [];
     }
     get name(){
