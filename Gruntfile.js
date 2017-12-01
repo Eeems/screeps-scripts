@@ -32,17 +32,10 @@ module.exports = function(grunt){
         concat: {
             classes: {
                 options: {
-                    banner: 'let classes = module.exports = {};\n'
+                    banner: 'let classes = module.exports = {roles: {}},\n    roles = module.exports.roles;\n'
                 },
-                src: ['dist/classes_basic.js', 'dist/classes_*.js'],
+                src: ['dist/classes_basic.js', 'dist/classes_*.js', 'dist/classes_role.js', 'dist/roles_*.js'],
                 dest: 'dist/_classes.js'
-            },
-            roles: {
-                options: {
-                    banner: 'let classes = require(\'classes\'),\n    Role = classes.Role,\n    roles = module.exports = {};\n'
-                },
-                src: ['dist/roles_*.js'],
-                dest: 'dist/_roles.js'
             }
         },
         copy: {
@@ -60,7 +53,7 @@ module.exports = function(grunt){
             }
         },
         clean: {
-            'dist': ['dist/classes_*.js', 'roles_*.js']
+            'dist': ['dist/classes_*.js', 'dist/roles_*.js', 'dist/main.js']
         },
         watch: {
             scripts: {
@@ -88,6 +81,20 @@ module.exports = function(grunt){
                     ]
                 }
             },
+            roles: {
+                files: [{
+                    src: 'dist/_classes.js',
+                    dest: 'dist/_classes.js'
+                }],
+                options: {
+                    replacements: [
+                        {
+                            pattern: /^class ([^{ ]+) extends Role\{/igm,
+                            replacement: 'module.exports.$1 = class $1 extends classes.Role{'
+                        }
+                    ]
+                }
+            },
             dist: {
                 files: [{
                     expand: true,
@@ -102,7 +109,7 @@ module.exports = function(grunt){
                 options: {
                     replacements: [
                         {
-                            pattern: /require\((['"])([^'"/]+['"])\)(;?)/ig,
+                            pattern: /require\((['"])((?!ext)[^'"_'][^'"/]+['"])\)(;?)/ig,
                             replacement: 'require($1_$2)$3'
                         },
                         {

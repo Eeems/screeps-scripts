@@ -39,27 +39,36 @@ class Room extends classes.Basic{ // eslint-disable-line no-unused-vars
         return ((this.energyAvailable / this.energyCapacityAvailable) * 100).toFixed();
     }
     get creeps(){
-        return this._creeps;
+        return classes.Basic.getByIds(this._creeps);
     }
     get spawns(){
-        return this._spawns;
+        return classes.Basic.getByIds(this._spawns);
     }
     get sources(){
-        return this._sources;
+        return classes.Basic.getByIds(this._sources);
+    }
+    get getPositionAt(){
+        return this.me.getPositionAt;
+    }
+    get lookAtArea(){
+        return this.me.lookAtArea;
     }
     cache(){
-        this.cacheItem('spawn');
-        this.cacheItem('creep');
-        this.cacheItem('source');
+        this.cacheItem('spawn', FIND_MY_SPAWNS);
+        this.cacheItem('creep', FIND_MY_CREEPS);
+        this.cacheItem('source', FIND_SOURCES);
     }
-    cacheItem(name){
-        if(this.me){
-            let pluralName = name + 's',
-                initName = name.substr(0, 1).toUpperCase() + name.substr(1),
-                cached = _.map(this[pluralName], i => i.me),
-                items = this.me.find(FIND_MY_SPAWNS, i => !~cached.indexOf(i));
-            this['_' + pluralName] = _.union(this[pluralName], _.map(items, i => new classes[initName](i.id)));
-        }
+    cacheItem(name, find){
+        let pluralName = name + 's',
+            initName = name.substr(0, 1).toUpperCase() + name.substr(1),
+            propName = '_' + pluralName,
+            cached = (this[pluralName] || []).map(i => i.id),
+            items = this.me.find(find, i => !~cached.indexOf(i.id));
+        this[propName] = _.union(this[pluralName], items.map(i => {
+            let instance = classes.Basic.getById(i.id) || new classes[initName](i.id);
+            instance.cache && instance.cache();
+            return i.id;
+        }));
     }
     uncache(){
         this._creeps = [];
@@ -67,8 +76,8 @@ class Room extends classes.Basic{ // eslint-disable-line no-unused-vars
         this._sources = [];
     }
     run(){
-        this.spawns.forEach(s => s.run());
-        this.sources.forEach(s => s.run());
-        this.creeps.forEach(c => c.run());
+        this.spawns.forEach(spawn => spawn.run());
+        this.sources.forEach(source => source.run());
+        this.creeps.forEach(creep => creep.run());
     }
 };

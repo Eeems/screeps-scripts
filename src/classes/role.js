@@ -31,6 +31,12 @@ class Role{ // eslint-disable-line no-unused-vars
         // @todo validate energy structures
         this._energyStructures = energyStructures;
     }
+    get availableEnergy(){
+        return _.sum(this.energyStructures.map(s => s.energy));
+    }
+    get affordable(){
+        return this.cost <= this.availableEnergy;
+    }
     get body(){
         return this._body;
     }
@@ -54,5 +60,11 @@ class Role{ // eslint-disable-line no-unused-vars
     }
     get length(){
         return this.creeps.length;
+    }
+    static get(name){
+        return roles[name];
+    }
+    static exists(name){
+        return !!roles[name];
     }
 };

@@ -50,7 +50,7 @@ class Creep extends classes.Basic{ // eslint-disable-line no-unused-vars
         return ((this.hits / this.hitsMax) * 100).toFixed();
     }
     run(){
-        if(!this.spawning){
+        if(!this.spawning && this.role){
             this.role.run.call(this);
         }
     }

@@ -1,0 +1,3 @@
+class Harvester extends Role{
+
+}
