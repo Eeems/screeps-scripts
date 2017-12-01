@@ -1,10 +1,12 @@
-class Creep extends classes.Basic{ // eslint-disable-line no-unused-vars
-    constructor(id, role){
+class Unit extends Basic{ // eslint-disable-line no-unused-vars
+    constructor(id){
         super(id);
-        this.role = role;
     }
     get name(){
         return this.me.name;
+    }
+    get role(){
+        return roles[this.memory.role];
     }
     get body(){
         return this.me.body;
@@ -14,6 +16,9 @@ class Creep extends classes.Basic{ // eslint-disable-line no-unused-vars
     }
     get room(){
         return this.me.room;
+    }
+    get host(){
+        return classes.Basic.getById(this.memory.host);
     }
     get saying(){
         return this.me.saying;
@@ -32,13 +37,19 @@ class Creep extends classes.Basic{ // eslint-disable-line no-unused-vars
         this.me.memory = memory;
     }
     get carry(){
-        return this.me.carry.carry;
+        return this.me.carry;
+    }
+    get carried(){
+        return _.sum(this.carry);
     }
     get carryCapacity(){
         return this.me.carryCapacity;
     }
     get carryPercent(){
-        return ((_.sum(this.carry) / this.carryCapacity) * 100).toFixed();
+        return ((this.carried / this.carryCapacity) * 100).toFixed();
+    }
+    get isFull(){
+        return this.carried === this.carryCapacity;
     }
     get hits(){
         return this.me.hits;
@@ -51,7 +62,7 @@ class Creep extends classes.Basic{ // eslint-disable-line no-unused-vars
     }
     run(){
         if(!this.spawning && this.role){
-            this.role.run.call(this);
+            this.role.runAs(this);
         }
     }
 };

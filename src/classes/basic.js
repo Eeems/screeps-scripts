@@ -32,10 +32,10 @@ class Basic{ // eslint-disable-line no-unused-vars
     static cacheInstance(instance, id){
         if(instance && instance._classname){
             if(!instance.destructor){
-                if(!id){
-                    id = instance._id;
+                if(instance._id !== id){
+                    instance._id = id;
                 }
-                instance = _.defaults(new classes[instance._classname](id), instance);
+                instance = _.assign(new classes[instance._classname](id), instance);
                 instance.cache && instance.cache();
             }
             return instance;
@@ -47,7 +47,7 @@ class Basic{ // eslint-disable-line no-unused-vars
             Memory._class_instances = {};
         }else{
             _.each(Memory._class_instances, (instance, id) => {
-                instance = classes.Basic.cacheInstance(instance);
+                instance = classes.Basic.cacheInstance(instance, id);
                 if(!instance){
                     classes.Basic._removeInstance(id);
                 }
@@ -58,7 +58,7 @@ class Basic{ // eslint-disable-line no-unused-vars
         if(!Memory._class_instances){
             Memory._class_instances = {};
         }
-        return classes.Basic.cacheInstance(Memory._class_instances[id]);
+        return classes.Basic.cacheInstance(Memory._class_instances[id], id);
     }
     static getByIds(ids){
         if(!Memory._class_instances){

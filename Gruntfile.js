@@ -53,7 +53,7 @@ module.exports = function(grunt){
             }
         },
         clean: {
-            'dist': ['dist/classes_*.js', 'dist/roles_*.js', 'dist/main.js']
+            'dist': ['dist/classes_*.js', 'dist/roles_*.js']
         },
         watch: {
             scripts: {
@@ -71,26 +71,16 @@ module.exports = function(grunt){
                 options: {
                     replacements: [
                         {
+                            pattern: /^class ([^{ ]+) extends ([^{\.]+)\{/igm,
+                            replacement: 'module.exports.$1 = class $1 extends classes.$2{'
+                        },
+                        {
                             pattern: /^class ([^{ ]+) extends classes.([^{]+)\{/igm,
                             replacement: 'module.exports.$1 = class $1 extends classes.$2{'
                         },
                         {
                             pattern: /^class ([^{ ]+)\{/igm,
                             replacement: 'module.exports.$1 = class $1{'
-                        }
-                    ]
-                }
-            },
-            roles: {
-                files: [{
-                    src: 'dist/_classes.js',
-                    dest: 'dist/_classes.js'
-                }],
-                options: {
-                    replacements: [
-                        {
-                            pattern: /^class ([^{ ]+) extends Role\{/igm,
-                            replacement: 'module.exports.$1 = class $1 extends classes.Role{'
                         }
                     ]
                 }

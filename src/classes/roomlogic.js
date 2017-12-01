@@ -1,4 +1,4 @@
-class Room extends classes.Basic{ // eslint-disable-line no-unused-vars
+class RoomLogic extends Basic{ // eslint-disable-line no-unused-vars
     constructor(name){
         super(name);
         this.uncache();
@@ -38,6 +38,9 @@ class Room extends classes.Basic{ // eslint-disable-line no-unused-vars
     get energyPercent(){
         return ((this.energyAvailable / this.energyCapacityAvailable) * 100).toFixed();
     }
+    get energyStructures(){
+        return this._energyStructures.map(id => Game.getObjectById(id));
+    }
     get creeps(){
         return classes.Basic.getByIds(this._creeps);
     }
@@ -54,18 +57,19 @@ class Room extends classes.Basic{ // eslint-disable-line no-unused-vars
         return this.me.lookAtArea;
     }
     cache(){
-        this.cacheItem('spawn', FIND_MY_SPAWNS);
-        this.cacheItem('creep', FIND_MY_CREEPS);
-        this.cacheItem('source', FIND_SOURCES);
+        this.cacheItem('spawns', 'SpawnLogic', FIND_MY_SPAWNS);
+        this.cacheItem('creeps', 'Unit', FIND_MY_CREEPS);
+        this.cacheItem('sources', 'SourceLogic', FIND_SOURCES);
+        this._energyStructures = this.me
+            .find(FIND_STRUCTURES, s => s.isActive() && !!~[STRUCTURE_EXTENSION, STRUCTURE_SPAWN].indexOf(s.structureType))
+            .map(s => s.id);
     }
-    cacheItem(name, find){
-        let pluralName = name + 's',
-            initName = name.substr(0, 1).toUpperCase() + name.substr(1),
-            propName = '_' + pluralName,
-            cached = (this[pluralName] || []).map(i => i.id),
+    cacheItem(name, className, find){
+        let propName = '_' + name,
+            cached = (this[name] || []).map(i => i.id),
             items = this.me.find(find, i => !~cached.indexOf(i.id));
-        this[propName] = _.union(this[pluralName], items.map(i => {
-            let instance = classes.Basic.getById(i.id) || new classes[initName](i.id);
+        this[propName] = _.union(this[name], items.map(i => {
+            let instance = classes.Basic.getById(i.id) || new classes[className](i.id);
             instance.cache && instance.cache();
             return i.id;
         }));
@@ -74,10 +78,11 @@ class Room extends classes.Basic{ // eslint-disable-line no-unused-vars
         this._creeps = [];
         this._spawns = [];
         this._sources = [];
+        this._energyStructures = []
     }
     run(){
-        this.spawns.forEach(spawn => spawn.run());
         this.sources.forEach(source => source.run());
+        this.spawns.forEach(spawn => spawn.run());
         this.creeps.forEach(creep => creep.run());
     }
 };

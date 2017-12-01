@@ -15,14 +15,14 @@ module.exports.loop = function(){
         _.each(Memory.creeps, (creep, name) => {
             if(!Game.creeps[name]){
                 delete Memory.creeps[name];
-                classes.Creep.removeById(creep.id);
+                classes.Basic.removeById(creep.id);
             }
         });
         _.each(_.keys(Game.rooms), name => {
-            let room = classes.Room.getById(name);
+            let room = classes.RoomLogic.getById(name);
             if(!room){
                 console.log('Detected new room: ' + name);
-                room = new classes.Room(name);
+                room = new classes.RoomLogic(name);
                 room.cache();
             }
             room.run();

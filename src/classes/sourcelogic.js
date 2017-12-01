@@ -1,4 +1,4 @@
-class Source extends classes.Basic{ // eslint-disable-line no-unused-vars
+class SourceLogic extends Basic{ // eslint-disable-line no-unused-vars
     constructor(id){
         super(id);
         this.uncache();
@@ -37,17 +37,20 @@ class Source extends classes.Basic{ // eslint-disable-line no-unused-vars
         if(this.spawn){
             return this.spawn
                 .queue
-                .filter(i => i.host === this)
+                .filter(i => i.host.id === this.id)
                 .map(i => i.role);
         }
         return [];
     }
+    get safe(){
+        return !this.pos.findInRange(FIND_HOSTILE_CREEPS, 10).length;
+    }
     get requiresCreeps(){
-        return this.creeps.length + this.spawning.length < this.spaces.length;
+        return this.safe && this.creeps.length + this.spawning.length < this.spaces.length;
     }
     run(){
         if(this.requiresCreeps){
-            this.spawn.add(roles.Harvester, this);
+            this.spawn.add(roles.harvester, this);
         }
     }
     cache(){
