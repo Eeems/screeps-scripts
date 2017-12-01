@@ -25,7 +25,23 @@ class SourceLogic extends Basic{ // eslint-disable-line no-unused-vars
         return classes.Basic.getById(this._spawn) || classes.Spawn(this._spawn);
     }
     get spaces(){
-        return this._spaces;
+        return _.map(this._spaces, s => {
+            let space = {
+                x: s.x,
+                y: s.y
+            };
+            if(s.from){
+                try{
+                    space.from =  Room.deserializePath(s.from);
+                }catch(e){}
+            }
+            if(s.to){
+                try{
+                    space.to = Room.deserializePath(s.to);
+                }catch(e){}
+            }
+            return space;
+        });
     }
     get creeps(){
         return classes.Basic.getByIds(this._creeps);
@@ -96,17 +112,22 @@ class SourceLogic extends Basic{ // eslint-disable-line no-unused-vars
                     y: self.pos.y - y
                 };
                 if(_.reduce(items, (passable, item) => passable && !~OBSTACLE_OBJECT_TYPES.indexOf(item.type), true)){
-                    if(self._hasSpace(space.x, space.y) || !self._getSpace(space.x, space.y).path){
+                    if(self._hasSpace(space.x, space.y) || !self._getSpace(space.x, space.y).to){
                         // If the space has no obsticles check to see if there is a valid path to/from it
                         let position = self.room.getPositionAt(x, y),
-                            path = {
-                                to: PathFinder.search(self.spawn.pos, position),
-                                from: PathFinder.search(position, self.spawn.pos)
-                            };
-                        if(path.to.incomplete || path.from.incomplete){
+                            toPath = PathFinder.search(self.spawn.pos, {
+                                pos: position,
+                                range: 1
+                            }),
+                            fromPath = PathFinder.search(position, {
+                                pos: self.spawn.pos,
+                                range: 1
+                            });
+                        if(toPath.incomplete || fromPath.incomplete){
                             self._removeSpace(space.x, space.y);
                         }else{
-                            space.path = path;
+                            space.to = Room.serializePath(toPath.path);
+                            space.from = Room.serializePath(fromPath.path);
                             self._spaces.push(space);
                         }
                     }
