@@ -1,16 +1,23 @@
 {
+  "name": "eeems'screeps",
   "scripts": {
     "postinstall": "typings install",
-    "prebuild": "rimraf dist/* && npm run test",
-    "build": "dts-generator --exclude \"node_modules/**/*.d.ts\" --exclude \"typings/**/*.d.ts\" --exclude \"examples/**/*.ts\" --name posis-api --project ./ --out ./dist/index.d.ts",
-    "test": "tsc"
+    "prebuild": "rimraf dist/*",
+    "build": "tsc && asc -o dist/init.wast -v -O src/kernel/init.ts"
   },
   "devDependencies": {
     "assemblyscript": "^0.3.0",
     "rimraf": "^2.6.1",
-    "typescript": "^2.3.4",
-    "dts-generator": "^2.1.0",
     "tslint": "^5.4.3",
     "typings": "^2.1.1"
+  },
+  "dependencies": {
+    "@types/long": "^3.0.32",
+    "@types/node": "^8.0.53",
+    "@types/webassembly-js-api": "0.0.1",
+    "assemblyscript-loader": "^0.3.0",
+    "long": "^3.2.0",
+    "typed-screeps": "^1.0.4",
+    "typescript": "^2.6.2"
   }
 }

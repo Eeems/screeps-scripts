@@ -1,6 +1,20 @@
 {
-    "extends": "./node_modules/assemblyscript/tsconfig.assembly.json",
+    "compilerOptions": {
+        "target": "es6",
+        "types": ["node", "typed-screeps", "long", "webassembly-js-api", "assemblyscript-loader"],
+        "sourceMap": false,
+        "declaration": true,
+        "newLine": "LF",
+        "removeComments": false,
+        "outDir": "dist"
+    },
     "include": [
+        "src/init.ts",
+        "src/module/**/*.d.ts",
         "typings/**/*.d.ts"
-   ]
+    ],
+    "exclude": [
+        "./dist",
+        "node_modules"
+    ]
 }
