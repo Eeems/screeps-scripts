@@ -1,0 +1,6 @@
+{
+  "name": "eeems",
+  "globalDependencies": {
+    "posis-api": "github:screepers/POSIS/dist/index.d.ts#master"
+  }
+}
