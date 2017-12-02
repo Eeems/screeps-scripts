@@ -1,1 +1,5 @@
-console.log('Test');
+export namespace Kernel{
+    export function main(){
+        console.log('Test');
+    }
+}

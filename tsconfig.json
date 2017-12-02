@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "target": "es6",
+        "target": "es5",
         "types": ["node", "typed-screeps", "long", "webassembly-js-api", "assemblyscript-loader"],
         "sourceMap": false,
         "declaration": true,
@@ -9,7 +9,7 @@
         "outDir": "dist"
     },
     "include": [
-        "src/init.ts",
+        "src/main.ts",
         "src/module/**/*.d.ts",
         "typings/**/*.d.ts"
     ],
