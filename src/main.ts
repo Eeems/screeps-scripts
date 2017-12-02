@@ -1,19 +1,14 @@
-import load from 'assemblyscript-loader';
-declare abstract class Wasm{}
+import * as Profiler from './profiler/Profiler';
+import {Kernel} from './kernel/kernel';
 
-namespace Main{
-    let isReady = false,
-        kernel;
-    if('Wasm' in global){
-        load('kernel.wasm', { exports: kernel });
-        kernel.ready.then(() => (isReady = true));
-    }else{
-        kernel = require('kernel');
-        isReady = true;
-    }
-    export function loop(){
-        if(isReady && 'main' in kernel){
-            kernel.main();
-        }
-    }
+const kernel = new Kernel();
+global.Profiler = Profiler.init();
+// if(!Memory.profiler.start){
+//     global.Profiler.start();
+// }
+global.Kernel = kernel;
+
+export function loop(){
+    kernel.loadProcessTable()
+    // global.Profiler.output();
 }
