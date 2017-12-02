@@ -18,15 +18,14 @@ export class Process{
         this.memory = memory;
     }
 }
+export enum Priority {
+    Always = 0,
+    AlwaysLast = 1,
+    Sometimes = 2
+};
 
-export module Priority {
-    export const Always = 0;
-    export const AlwaysLast = 1;
-    export const Sometimes = 2;
-}
-
-export module Status {
-    export const SLEEP = 0;
-    export const ACTIVE = 1;
-    export const INACTIVE = 2;
+export enum Status {
+    SLEEP = 0,
+    ACTIVE = 1,
+    INACTIVE = 2
 }

@@ -1,14 +1,13 @@
 import * as Profiler from './profiler/Profiler';
-import {Kernel} from './kernel/kernel';
+import * as Kernel from './kernel/kernel';
 
-const kernel = new Kernel();
 global.Profiler = Profiler.init();
 // if(!Memory.profiler.start){
 //     global.Profiler.start();
 // }
-global.Kernel = kernel;
+global.Kernel = Kernel;
 
 export function loop(){
-    kernel.loadProcessTable()
+    Kernel.loadProcessTable()
     // global.Profiler.output();
 }

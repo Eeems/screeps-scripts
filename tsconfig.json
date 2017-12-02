@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "module": "commonjs",
-        "target": "es6",
+        "target": "es5",
         "removeComments": true,
         "noEmitOnError": true,
         "noResolve": false,
@@ -18,7 +18,8 @@
         "libs/*.ts",
         "typings/**/*.d.ts",
         "src/**/*.ts",
-        "src/**/*.d.ts"
+        "src/**/*.d.ts",
+        "node_modules/@types/**/*.d.ts"
       ],
       "exclude": [
         "dist",
