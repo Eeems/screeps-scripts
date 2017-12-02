@@ -1,5 +1,11 @@
 import { profile } from '../profiler/Profiler';
 import { Process, Priority, Status } from './process';
+import { default as FS } from './fs';
+
+Memory.kernel = Memory.kernel || {
+    memory: {},
+    processes: []
+};
 
 @profile
 export class Kernel {
@@ -18,7 +24,7 @@ export class Kernel {
     }
     private getProcessMemory(pid: number): any{
         Memory.kernel.memory = Memory.kernel.memory || {};
-         Memory.kernel.memory[pid] =  Memory.kernel.memory[pid] || {};
+        Memory.kernel.memory[pid] =  Memory.kernel.memory[pid] || {};
         return Memory.kernel.memory[pid];
     }
     public loadProcessTable(){
@@ -26,9 +32,9 @@ export class Kernel {
         this.processTable;
         Memory.kernel.processes = Memory.kernel.processes || [];
         for(let item of Memory.kernel.processes){
-            let [pid, ppid, classPath, priority, ...remaining] = item;
+            let [pid, ppid, imageName, priority, ...remaining] = item;
             try{
-                let ProcessClass = require(classPath),
+                let ProcessClass = FS.getImage(imageName),
                     memory = this.getProcessMemory(pid),
                     process = new ProcessClass(pid, ppid, priority) as Process;
                 process.setMemory(memory);
@@ -47,7 +53,7 @@ export class Kernel {
                 }
             }catch(e){
                 console.log(`Error while loading: ${e.message}`);
-                console.log(classPath);
+                console.log(imageName);
             }
         }
     }
