@@ -5,7 +5,8 @@
         "sourceMap": false,
         "declaration": true,
         "newLine": "LF",
-        "removeComments": false
+        "removeComments": false,
+        "outDir": "dist"
     },
     "include": [
         "src/kernel/*.ts", "src/kernel/**/*.ts"

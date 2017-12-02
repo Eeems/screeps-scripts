@@ -3,7 +3,7 @@
   "scripts": {
     "postinstall": "typings install",
     "prebuild": "rimraf dist/*",
-    "build": "tsc && tsc --outFile dist/kernel.js -p asconfig.json && asc -o dist/kernel.wasm -v -O src/kernel/init.ts",
+    "build": "tsc && tsc -p asconfig.json && asc -o dist/kernel.wasm -v -O src/kernel/index.ts",
     "postbuild": "grunt"
   },
   "devDependencies": {
