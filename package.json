@@ -12,7 +12,7 @@
   },
   "devDependencies": {
     "@types/chai": "^3.5.2",
-    "@types/lodash": "^4.14.86",
+    "@types/lodash": "^3.10.1",
     "@types/long": "^3.0.32",
     "@types/mocha": "^2.2.41",
     "@types/node": "^8.0.53",

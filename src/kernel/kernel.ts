@@ -3,6 +3,7 @@ import { wrap } from '../profiler/Profiler';
 import { FS } from './fs';
 import { default as memory } from './memory';
 import { Priority, Process, Status } from './process';
+import  * as _ from 'lodash';
 
 let processes: {[pid: number]: Process},
     alwaysQueue: Process[],
