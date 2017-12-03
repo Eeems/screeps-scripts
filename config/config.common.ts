@@ -65,10 +65,10 @@ export function init(options: EnvOptions): Config {
   config.resolve.plugin("tsConfigPaths") // name here is just an identifier
     .use(TsConfigPathsPlugin);
 
-  config.externals({
-    // webpack will not try to rewrite require("main.js.map")
-    "main.js.map": "main.js.map",
-  });
+  // config.externals({
+  //   // webpack will not try to rewrite require("main.js.map")
+  //   "main.js.map": "main.js.map",
+  // });
 
   /////////
   /// Plugins

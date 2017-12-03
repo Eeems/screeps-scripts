@@ -1,5 +1,4 @@
 import {createCodec, decode, encode} from 'msgpack-lite';
-import  * as _ from 'lodash';
 
 const options = {
     codec: createCodec({

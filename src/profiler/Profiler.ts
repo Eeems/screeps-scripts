@@ -1,5 +1,4 @@
 import { default as memory } from '../kernel/memory';
-import  * as _ from 'lodash';
 const Reflect = require('harmony-reflect');
 
 /* tslint:disable:ban-types */

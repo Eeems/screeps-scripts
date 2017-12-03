@@ -1,5 +1,4 @@
 import { wrap } from '../profiler/Profiler';
-import  * as _ from 'lodash';
 
 export namespace FS {
     const _images: Array<IterableIterator<any>> = [];

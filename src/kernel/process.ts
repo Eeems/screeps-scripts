@@ -2,10 +2,23 @@ import { profile } from '../profiler/Profiler';
 import { FS } from './fs';
 import { getProcess } from './kernel';
 
+export enum Priority {
+    Always = 0,
+    AlwaysLast = 1,
+    Sometimes = 2
+}
+
+export enum Status {
+    KILLED = -1,
+    SLEEP = 0,
+    ACTIVE = 1,
+    INACTIVE = 2
+}
+
 export class Process{
     public pid: number;
     public ppid: number;
-    public priority: number;
+    public priority: number | Priority;
     public status: number;
     public sleepInfo: {
         start: number,
@@ -51,16 +64,4 @@ export class Process{
             value: res.value || 0
         };
     }
-}
-export enum Priority {
-    Always = 0,
-    AlwaysLast = 1,
-    Sometimes = 2
-}
-
-export enum Status {
-    KILLED = -1,
-    SLEEP = 0,
-    ACTIVE = 1,
-    INACTIVE = 2
 }
