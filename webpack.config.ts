@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import * as _ from "lodash";
 import * as webpack from "webpack";
 import * as Config from "webpack-chain";
