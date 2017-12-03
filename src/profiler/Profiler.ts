@@ -91,6 +91,18 @@ function wrapFunction(obj: object, key: PropertyKey, className?: string) {
   });
 }
 
+export function wrap<T extends Function>(fn: T, name?: string): T{
+  if(!name){
+    name = fn.name;
+  }
+  return <any>function(){
+    const start = Game.cpu.getUsed(),
+      res = fn(...arguments);
+    record(name, Game.cpu.getUsed() - start);
+    return res;
+  };
+}
+
 export function profile(target: Function): void;
 export function profile(target: object, key: string | symbol, _descriptor: TypedPropertyDescriptor<Function>): void;
 export function profile(
@@ -123,15 +135,20 @@ function isEnabled(): boolean {
 }
 
 export function record(key: string | symbol, time: number) {
-  let memoryData = memory.get('profiler');
-  if (!memoryData.data[key]) {
-    memoryData.data[key] = {
-      calls: 0,
-      time: 0,
-    };
+  const memoryData = memory.get('profiler');
+  if(memoryData){
+    if (!memoryData.data[key]) {
+      memoryData.data[key] = {
+        calls: 0,
+        time: 0,
+      };
+    }
+    memoryData.data[key].calls++;
+    memoryData.data[key].time += time;
+  }else{
+    console.log('Profiler memory not defined');
+    console.log(`  record(${key}, ${time})`);
   }
-  memoryData.data[key].calls++;
-  memoryData.data[key].time += time;
 }
 
 interface OutputData {
@@ -143,7 +160,7 @@ interface OutputData {
 }
 
 function outputProfilerData() {
-  let memoryData = memory.get('profiler');
+  const memoryData = memory.get('profiler');
   let totalTicks = memoryData.total;
   if (memoryData.start) {
     totalTicks += Game.time - memoryData.start;

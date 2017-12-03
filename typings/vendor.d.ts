@@ -7,6 +7,7 @@ declare namespace NodeJS {
         log: any;
         Profiler: any;
         Kernel: any;
+        FS: any;
         memory: any;
     }
 }
