@@ -41,15 +41,17 @@ export function init(options: EnvOptions): Config {
 
   config.devtool("source-map");
 
-  config.target("node");
+  config.target("web");
 
   config.node.merge({
-    Buffer: false,
+    Buffer: true,
     __dirname: false,
     __filename: false,
-    console: true,
-    global: true,
+    console: false,
+    global: false,
     process: false,
+    stream: true,
+    util: true
   });
 
   config.watchOptions({ ignored: /node_modules/ });

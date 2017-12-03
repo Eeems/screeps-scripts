@@ -3,8 +3,7 @@ import * as Config from "webpack-chain";
 
 import * as CommonConfig from "./config.common";
 import { Credentials, EnvOptions } from "./types";
-
-const ScreepsWebpackPlugin = require("screeps-webpack-plugin");
+const ScreepsWebpackPlugin = require("../libs/screeps-webpack-plugin");
 
 function webpackConfig(options: EnvOptions = {}): Config {
   // get the common configuration to start with
