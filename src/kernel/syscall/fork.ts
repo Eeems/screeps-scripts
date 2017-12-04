@@ -11,7 +11,9 @@ export class Fork implements SYSCALL{
     }
     public run(process: Process): number | boolean{
         const child = startProcess(this.imageName, this.priority, process.pid);
-        scheduleProcess(child);
+        if(child){
+            scheduleProcess(child);
+        }
         return child ? child.pid : false;
     }
 }

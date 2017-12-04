@@ -3,7 +3,7 @@ import * as SYSCALL from '../kernel/syscall/';
 import { default as  memory } from '../kernel/memory';
 import * as Profiler from '../profiler/Profiler';
 
-function* run(): IterableIterator<any>{
+function* main(): IterableIterator<any>{
     if(!global.Profiler){
         global.Profiler = Profiler.init();
     }
@@ -16,4 +16,4 @@ function* run(): IterableIterator<any>{
     return new SYSCALL.Priority(Priority.Always);
 }
 
-export default run;
+export default main;
