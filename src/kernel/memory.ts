@@ -1,4 +1,5 @@
 import {createCodec, decode, encode} from 'msgpack-lite';
+import * as Profiler from '../profiler/Profiler';
 
 const options = {
     codec: createCodec({
@@ -109,6 +110,10 @@ namespace memory{
         if(!data.has('ram')){
             data.set('ram', {});
             console.log('RAM entries missing. Rebuilding.');
+        }
+        if(!data.has('profiler')){
+            const profiler = Profiler.init();
+            global.Profiler = profiler;
         }
     }
     export function reset(){

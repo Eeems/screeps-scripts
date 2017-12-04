@@ -11,22 +11,22 @@ export namespace FS {
             return function*(...args){
                 return image(...args);
             };
-        }, 'FS:makeImage'),
+        }, 'FileSystem'),
         setImage = wrap((name: string, image: () => IterableIterator<any>) => {
             _images[name] = image;
-        }, 'FS:setImage'),
+        }, 'FileSystem'),
         getImage = wrap((name: string): () => IterableIterator<any> =>{
             if(!hasImage(name)){
                 throw new Error(`Image ${name} not found`);
             }
             return _images[name];
-        }, 'FS:getImage'),
+        }, 'FileSystem'),
         hasImage = wrap((name: string): boolean =>{
             return name in _images;
-        }, 'FS:hasImage'),
+        }, 'FileSystem'),
         images = wrap((): string[] => {
             return _.keys(_images);
-        }, 'FS:images');
+        }, 'FileSystem');
 }
 
 export default FS;

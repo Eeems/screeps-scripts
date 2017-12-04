@@ -8,81 +8,66 @@ import * as SYSCALL from './syscall';
 let processes: {[pid: number]: Process},
     alwaysQueue: Process[],
     lastQueue: Process[],
-    sometimesQueue: Process[];
+    sometimesQueue: Process[],
+    PID = 0;
+
 function runQueue(queue: Process[]): void{
     const yieldInstance = new SYSCALL.Yield();
     while(queue.length){
-        let process = queue.pop();
+        let process = queue.shift();
         while(process){
             const start = Game.cpu.getUsed();
-            let interrupt = false;
             try{
-                while(!interrupt){
-                    if(!process.parent){
-                        killProcess(process.pid);
-                    }
-                    switch(process.status){
-                        case Status.SLEEP:
-                            const sleepInfo = process.sleepInfo;
-                            if(
-                                sleepInfo!.start + sleepInfo!.duration < Game.time &&
-                                sleepInfo!.duration !== -1
-                            ){
-                                process.status = Status.ACTIVE;
-                                process.sleepInfo = undefined;
-                            }else{
-                                interrupt = true;
-                                break;
-                            }
-                        case Status.ACTIVE:
-                            const res = process.next();
-                            let syscall = res.value || yieldInstance;
-                            if(syscall instanceof SYSCALL.SYSCALL){
-                                switch(syscall.constructor){
-                                    case SYSCALL.Sleep:
-                                        syscall = <SYSCALL.Sleep>syscall;
-                                        process.sleepInfo = {
-                                            start: Game.time,
-                                            duration: syscall.ticks
-                                        };
-                                        break;
-                                    case SYSCALL.Kill:
-                                        killProcess(process.pid);
-                                        break;
-                                    case SYSCALL.Fork:
-                                        syscall = <SYSCALL.Fork>syscall;
-                                        startProcess(syscall.imageName, syscall.priority, process.pid);
-                                        break;
-                                    case SYSCALL.Priority:
-                                        syscall = <SYSCALL.Priority>syscall;
-                                        process.priority = syscall.priority;
-                                        break;
-                                    case SYSCALL.Reboot:case SYSCALL.Inject:case SYSCALL.Yield:
-                                    default:
-                                        break;
-                                }
-                            }
-                            if(!res.done){
-                                queue.push(process);
-                                interrupt = true;
-                            }
-                            break;
-                        case Status.INACTIVE:case Status.KILLED:
-                        default:
-                            interrupt = true;
-                            break;
-                    }
+                setPID(process.pid);
+                if(!process.parent){
+                    killProcess(process.pid);
                 }
+                switch(process.status){
+                    case Status.SLEEP:
+                        const sleepInfo = process.sleepInfo;
+                        if(
+                            sleepInfo!.start + sleepInfo!.duration < Game.time &&
+                            sleepInfo!.duration !== -1
+                        ){
+                            process.status = Status.ACTIVE;
+                            process.sleepInfo = undefined;
+                        }else{
+                            break;
+                        }
+                    case Status.ACTIVE:
+                        const res = process.next(process.signal);
+                        const syscall = res.value || yieldInstance;
+                        if(SYSCALL.isSYSCALL(syscall) && 'run' in syscall){
+                            process.signal = syscall.run(process);
+                        }
+                        if(!res.done){
+                            queue.push(process);
+                        }
+                        break;
+                    case Status.INACTIVE:case Status.KILLED:
+                    default:
+                        break;
+                }
+                setPID(0);
             }catch(e){
                 console.log(`Process ${process.pid} (${process.imageName}) failed`);
                 console.log(e.message);
                 console.log(e.stack);
             }finally{
                 Profiler.record(process.imageName, Game.cpu.getUsed() - start);
-                process = queue.pop();
+                process = queue.shift();
             }
         }
     }
+}
+function setPID(pid: number){
+    PID = pid;
+}
+export function getPID(): number{
+    return PID;
+}
+export function elavated(): boolean{
+    return PID === 0;
 }
 export function run(): void{
     runQueue(alwaysQueue);
@@ -94,6 +79,8 @@ function eachProcess(fn){
         const process = processes[pid];
         if(process instanceof Process){
             fn(process);
+        }else{
+            console.log(`Warning: Invalid process: ${pid}`);
         }
     });
 }
@@ -103,14 +90,14 @@ export const reboot = wrap((): void => {
         alwaysQueue = [];
         lastQueue = [];
         sometimesQueue = [];
-    }, 'Kernel:reboot'),
+    }, 'Kernel'),
     getProcessMemory = wrap((pid: number): any => {
         const ram = memory.get('ram');
         if(!(pid in ram)){
             ram[pid] = {};
         }
         return ram[pid];
-    }, 'Kernel:getProcessMemory'),
+    }, 'Kernel'),
     startProcess = wrap((imageName: string, priority: number, ppid?: number): Process => {
         if(FS.hasImage(imageName)){
             let pid = 0;
@@ -122,7 +109,7 @@ export const reboot = wrap((): void => {
             memory.get('ram')[pid] = {};
             return process;
         }
-    }, 'Kernel:startProcess'),
+    }, 'Kernel'),
     killProcess = wrap((pid: number): boolean => {
         eachProcess((process) => {
             if(process.ppid === pid && process.pid !== pid){
@@ -138,34 +125,41 @@ export const reboot = wrap((): void => {
             return true;
         }
         return false;
-    }, 'Kernel:killProcess'),
+    }, 'Kernel'),
     getProcess = wrap((pid: number): Process => {
         return processes[pid];
-    }, 'Kernel:getProcess'),
-    schedule = wrap((): void => {
+    }, 'Kernel'),
+    getChildProcesses = wrap((pid: number): Process[] => {
+        const res = [];
         eachProcess((process) => {
-            switch(process.priority){
-                case Priority.Always:
-                    alwaysQueue.push(process);
-                    break;
-                case Priority.AlwaysLast:
-                    lastQueue.push(process);
-                    break;
-                case Priority.Sometimes:default:
-                    sometimesQueue.push(process);
-                    break;
+            if(process.ppid === pid && process.pid !== pid){
+                res.push(process);
             }
         });
-    }, 'Kernel:schedule'),
+        return res;
+    }, 'Kernel'),
+    schedule = wrap((): void => {
+        eachProcess(scheduleProcess);
+    }, 'Kernel'),
+    scheduleProcess = wrap((process: Process): void => {
+        switch(process.priority){
+            case Priority.Always:
+                alwaysQueue.push(process);
+                break;
+            case Priority.AlwaysLast:
+                lastQueue.push(process);
+                break;
+            case Priority.Sometimes:default:
+                sometimesQueue.push(process);
+                break;
+        }
+    }, 'Kernel'),
     loadProcessTable = wrap((): void => {
         reboot();
         if(!memory.has('processes')){
             memory.set('processes', []);
         }
         const processData = memory.get('processes');
-        if(!processData.length){
-            startProcess('/bin/initd', Priority.Always);
-        }
         for(const item of processData){
             const [pid, ppid, imageName, priority, ...remaining] = item;
             try{
@@ -182,7 +176,11 @@ export const reboot = wrap((): void => {
                 console.log(imageName);
             }
         }
-    }, 'Kernel:loadProcessTable'),
+        if(!processes[0]){
+            console.log('Launching /bin/initd');
+            startProcess('/bin/initd', Priority.Always);
+        }
+    }, 'Kernel'),
     saveProcessTable = wrap((): void => {
         const table = [];
         eachProcess((process) => {
@@ -196,4 +194,5 @@ export const reboot = wrap((): void => {
                 ]);
             }
         });
-    }, 'Kernel:saveProcessTable');
+        memory.set('processes', table);
+    }, 'Kernel');

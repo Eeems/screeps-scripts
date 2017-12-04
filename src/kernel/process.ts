@@ -1,6 +1,6 @@
 import { profile } from '../profiler/Profiler';
 import { FS } from './fs';
-import { getProcess } from './kernel';
+import { getChildProcesses, getProcess } from './kernel';
 
 export enum Priority {
     Always = 0,
@@ -24,6 +24,7 @@ export class Process{
         start: number,
         duration: number
     };
+    public signal;
     protected memory: any;
     private _imageName: any;
     private _image: IterableIterator<any>;
@@ -51,7 +52,11 @@ export class Process{
     public get parent(){
         return getProcess(this.ppid);
     }
+    public get children(){
+        return getChildProcesses(this.pid);
+    }
     public next(signal?: any): IteratorResult<any>{
+        this.signal = signal;
         if(!this.image){
             return {
                 done: true,
@@ -63,5 +68,29 @@ export class Process{
             done: res.done,
             value: res.value || 0
         };
+    }
+    public return(signal?: any): IteratorResult<any>{
+        this.signal = signal;
+        if(!this.image){
+            return {
+                done: true,
+                value: signal
+            };
+        }
+        const res = this.image.return(signal);
+        return {
+            done: true,
+            value: res.value || signal || 0
+        };
+    }
+    public throw(signal?: any): IteratorResult<any>{
+        this.signal = signal;
+        if(!this.image){
+            return {
+                done: true,
+                value: signal
+            };
+        }
+        return this.image.throw(signal);
     }
 }
