@@ -1,4 +1,6 @@
 import {createCodec, decode, encode} from 'msgpack-lite';
+import {compress, decompress} from 'lz-string';
+import * as zlib from 'zlib';
 
 const options = {
     codec: createCodec({
@@ -10,6 +12,49 @@ const options = {
 
 export class MemoryBuffer{
     private _data: any;
+    private _serializer: string;
+    private _compression: string;
+    static serializers = {
+        json: {
+            encode: JSON.stringify.bind(JSON),
+            decode: JSON.parse.bind(JSON)
+        },
+        msgpack: {
+            encode: (data) => {
+                const uint = encode(data, options);
+                let str = '';
+                for(let i=0, j = uint.length; i<j; ++i){
+                    str += String.fromCharCode(uint[i]);
+                }
+                return str;
+            },
+            decode: (data) => {
+                const uint = new Uint8Array(data.length);
+                for(let i=0, j = data.length; i<j; ++i){
+                    uint[i] = data.charCodeAt(i);
+                }
+                return decode(uint, options);
+            }
+        }
+    };
+    static compression = {
+        none: {
+            compress: (data) => data,
+            decompress: (data) => data
+        },
+        lzstring: {
+            compress,
+            decompress
+        },
+        gzip: {
+            compress: zlib.gzipSync.bind(zlib),
+            decompress: zlib.gunzipSync.bind(zlib)
+        },
+        deflate: {
+            compress: zlib.deflateSync.bind(zlib),
+            decompress: zlib.inflateSync.bind(zlib)
+        }
+    };
     public constructor(data?: string){
         if(data !== undefined){
             this.load(data);
@@ -41,27 +86,28 @@ export class MemoryBuffer{
     public defaultsDeep(data: any): void{
         this._data = _.defaultsDeep(this._data, data);
     }
-    public from(data: string): void{
-        const uint = new Uint8Array(data.length);
-        for(let i=0, j = data.length; i<j; ++i){
-            uint[i] = data.charCodeAt(i);
+    public from(data: string, format: string = 'json'): void{
+        let [serializer, compression] = format.split('+');
+        compression = compression || 'none';
+        const serializerFns = MemoryBuffer.serializers[serializer],
+            compressionFns = MemoryBuffer.compression[compression];
+        if(!serializerFns){
+            throw new Error('Invalid serializer')
         }
-        try{
-            this._data = decode(uint, options);
-        }catch(e){
-            console.log('Error trying to decode buffer: ' + e);
+        if(!compressionFns){
+            throw new Error('Invalid compression');
         }
+        this._serializer = serializer;
+        this._compression = compression || 'none';
+        this._data = serializerFns.decode(compressionFns.decompress(data));
     }
     public load(data: any): void{
         this._data = data;
     }
     public toString(): string{
-        const uint = encode(this._data, options);
-        let str = '';
-        for(let i=0, j = uint.length; i<j; ++i){
-            str += String.fromCharCode(uint[i]);
-        }
-        return str;
+        const serializerFns = MemoryBuffer.serializers[this._serializer],
+            compressionFns = MemoryBuffer.compression[this._compression];
+        return compressionFns.decompress(serializerFns.encode(this._data));
     }
     public toJSON(): any{
         return this._data;

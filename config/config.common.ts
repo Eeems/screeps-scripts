@@ -51,7 +51,8 @@ export function init(options: EnvOptions): Config {
     global: false,
     process: false,
     stream: true,
-    util: true
+    util: true,
+    zlib: true
   });
 
   config.watchOptions({ ignored: /node_modules/ });

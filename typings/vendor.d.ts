@@ -8,6 +8,7 @@ declare namespace NodeJS {
         Profiler: any;
         Kernel: any;
         FS: any;
+        C: any;
         memory: any;
     }
 }
