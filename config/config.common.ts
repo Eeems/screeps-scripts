@@ -49,7 +49,7 @@ export function init(options: EnvOptions): Config {
     __filename: false,
     console: false,
     global: false,
-    process: false,
+    process: true,
     stream: true,
     util: true,
     zlib: true

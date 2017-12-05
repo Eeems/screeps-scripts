@@ -10,9 +10,9 @@ function* ensureProcess(priority: Priority, imageName: string){
     }
 }
 
-function* main(): IterableIterator<any>{
-    const ensure = ensureProcess.bind(this);
-    yield* ensure(Priority.Always, '/bin/profiled');
-}
-
-export default main;
+export default {
+    next: function*(): IterableIterator<any>{
+        const ensure = ensureProcess.bind(this);
+        yield* ensure(Priority.Always, '/bin/profiled');
+    }
+};

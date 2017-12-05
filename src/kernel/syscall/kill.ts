@@ -9,6 +9,6 @@ export class Kill implements SYSCALL{
     }
     public run(process: Process): void{
         killProcess(process.pid);
-        process.return(0);
+        process.kill(0);
     }
 }

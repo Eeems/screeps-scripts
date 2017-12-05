@@ -1,14 +1,17 @@
 import {createCodec, decode, encode} from 'msgpack-lite';
 import {compress, decompress} from 'lz-string';
 import * as zlib from 'zlib';
+import C from '../kernel/constants';
 
 const options = {
-    codec: createCodec({
-        binarraybuffer: true,
-        preset: true,
-        uint8array: true
-    })
-};
+        codec: createCodec({
+            binarraybuffer: true,
+            preset: true,
+            uint8array: true
+        })
+    },
+    maxMemory = 2 * 1024 * 1024;
+    // maxSegmentMemory = 100 * 1024;
 
 export class MemoryBuffer{
     private _data: any;
@@ -55,7 +58,17 @@ export class MemoryBuffer{
             decompress: zlib.inflateSync.bind(zlib)
         }
     };
-    public constructor(data?: string){
+    public constructor(data?: string, format: string = 'json'){
+        let [serializer, compression] = format.split('+');
+        compression = compression || 'none';
+        if(!MemoryBuffer.serializers[serializer]){
+            throw new Error('Invalid serializer')
+        }
+        if(!MemoryBuffer.compression[compression]){
+            throw new Error('Invalid compression');
+        }
+        this._serializer = serializer;
+        this._compression = compression;
         if(data !== undefined){
             this.load(data);
         }
@@ -86,19 +99,15 @@ export class MemoryBuffer{
     public defaultsDeep(data: any): void{
         this._data = _.defaultsDeep(this._data, data);
     }
-    public from(data: string, format: string = 'json'): void{
-        let [serializer, compression] = format.split('+');
-        compression = compression || 'none';
-        const serializerFns = MemoryBuffer.serializers[serializer],
-            compressionFns = MemoryBuffer.compression[compression];
+    public from(data: string): void{
+        const serializerFns = MemoryBuffer.serializers[this._serializer],
+            compressionFns = MemoryBuffer.compression[this._compression];
         if(!serializerFns){
             throw new Error('Invalid serializer')
         }
         if(!compressionFns){
             throw new Error('Invalid compression');
         }
-        this._serializer = serializer;
-        this._compression = compression || 'none';
         this._data = serializerFns.decode(compressionFns.decompress(data));
     }
     public load(data: any): void{
@@ -115,7 +124,7 @@ export class MemoryBuffer{
 }
 
 namespace memory{
-    export let data: MemoryBuffer = new MemoryBuffer();
+    export let data: MemoryBuffer = new MemoryBuffer(C.MEMORY_FORMAT);
     export function setup(): void{
         data.from(RawMemory.get());
         if(typeof data.toJSON() !== 'object'){
@@ -124,12 +133,16 @@ namespace memory{
     }
     export function init(): void{}
     export function deinit(): void{
-        RawMemory.set(data.toString());
+        const memory = data.toString();
+        if(memory.length > maxMemory){
+            throw new Error('Memory filled');
+        }
+        RawMemory.set(memory);
     }
     export function activate(key: string | number): void{
         load(key);
     }
-    export function load(key): any{
+    export function load(key: string | number): any{
         !has(key) && set(key, {});
         return get(key);
     }
@@ -153,6 +166,12 @@ namespace memory{
     }
     export function reset(){
         data.load({});
+    }
+    export function getFreeMemory(){
+        return maxMemory - getUsedMemory();
+    }
+    export function getUsedMemory(){
+        return data.toString().length;
     }
 }
 export default memory;

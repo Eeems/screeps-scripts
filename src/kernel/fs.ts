@@ -1,21 +1,30 @@
 import { wrap } from '../profiler/Profiler';
+import {default as Image} from './image';
 
 export namespace FS {
     const _images: Array<IterableIterator<any>> = [];
 
-    export const makeImage = wrap((image): () => IterableIterator<any> => {
-            const ctor = image.constructor;
+    export const makeImage = wrap((image: {}): Image => {
+            for(let name of ['next', 'interrupt', 'wake', 'kill']){
+                if(name in image){
+                    image[name] = makeGenerator(image[name]);
+                }
+            }
+            return image;
+        }, 'FileSystem'),
+        makeGenerator = wrap((fn) => {
+            const ctor = fn.constructor;
             if(~[ctor.name, ctor.displayName].indexOf('GeneratorFunction')){
-                return image;
+                return fn;
             }
             return function*(...args){
-                return image(...args);
+                return fn(...args);
             };
         }, 'FileSystem'),
-        setImage = wrap((name: string, image: () => IterableIterator<any>) => {
+        setImage = wrap((name: string, image: Image) => {
             _images[name] = image;
         }, 'FileSystem'),
-        getImage = wrap((name: string): () => IterableIterator<any> =>{
+        getImage = wrap((name: string): Image =>{
             if(!hasImage(name)){
                 throw new Error(`Image ${name} not found`);
             }
