@@ -1,5 +1,4 @@
 import {createCodec, decode, encode} from 'msgpack-lite';
-import * as Profiler from '../profiler/Profiler';
 
 const options = {
     codec: createCodec({
@@ -71,14 +70,22 @@ export class MemoryBuffer{
 
 namespace memory{
     export let data: MemoryBuffer = new MemoryBuffer();
-    export function load(): void{
+    export function setup(): void{
         data.from(RawMemory.get());
+        if(typeof data.toJSON() !== 'object'){
+            reset();
+        }
     }
-    export function from(newData: string){
-        data.from(newData);
-    }
-    export function save(): void{
+    export function init(): void{}
+    export function deinit(): void{
         RawMemory.set(data.toString());
+    }
+    export function activate(key: string | number): void{
+        load(key);
+    }
+    export function load(key): any{
+        !has(key) && set(key, {});
+        return get(key);
     }
     export function get(key: string | number): any{
         return data.get(key);
@@ -98,27 +105,8 @@ namespace memory{
     export function defaultsDeep(d: any){
         data.defaultsDeep(d);
     }
-    export function ensure(){
-        if(typeof data.toJSON() !== 'object'){
-            data.load({});
-            console.log('Rebuilding memory');
-        }
-        if(!data.has('processes')){
-            data.set('processes', []);
-            console.log('Process table missing. Rebuilding.');
-        }
-        if(!data.has('ram')){
-            data.set('ram', {});
-            console.log('RAM entries missing. Rebuilding.');
-        }
-        if(!data.has('profiler')){
-            const profiler = Profiler.init();
-            global.Profiler = profiler;
-        }
-    }
     export function reset(){
         data.load({});
-        ensure();
     }
 }
 export default memory;

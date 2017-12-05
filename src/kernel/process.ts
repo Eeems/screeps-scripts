@@ -3,6 +3,7 @@ import { FS } from './fs';
 import { getChildProcesses, getProcess } from './kernel';
 
 export enum Priority {
+    Immediate = -1,
     Always = 0,
     AlwaysLast = 1,
     Sometimes = 2
@@ -15,6 +16,13 @@ export enum Status {
     INACTIVE = 2
 }
 
+export type ProcessStats = {
+    avg: number,
+    usage: number,
+    runs: number,
+    max: number
+};
+
 export class Process{
     public pid: number;
     public ppid: number;
@@ -25,6 +33,7 @@ export class Process{
         duration: number
     };
     public signal;
+    public cpu: ProcessStats;
     protected memory: any;
     private _imageName: any;
     private _image: IterableIterator<any>;
@@ -34,6 +43,12 @@ export class Process{
         this.priority = priority;
         this.status = Status.ACTIVE;
         this._imageName = imageName;
+        this.cpu = {
+            avg: 0,
+            usage: 0,
+            runs: 0,
+            max: 0
+        };
     }
     @profile
     public setMemory(memory: any){
@@ -92,5 +107,13 @@ export class Process{
             };
         }
         return this.image.throw(signal);
+    }
+    public record(usage: number){
+        this.cpu.runs++;
+        this.cpu.avg = (this.cpu.avg + usage) / 2;
+        this.cpu.usage = usage;
+        if(usage > this.cpu.max){
+            this.cpu.max = usage;
+        }
     }
 }

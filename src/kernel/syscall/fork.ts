@@ -1,4 +1,4 @@
-import {scheduleProcess, startProcess} from '../kernel';
+import {startProcess} from '../kernel';
 import {Process} from '../process';
 import {SYSCALL} from './index';
 
@@ -11,9 +11,6 @@ export class Fork implements SYSCALL{
     }
     public run(process: Process): number | boolean{
         const child = startProcess(this.imageName, this.priority, process.pid);
-        if(child){
-            scheduleProcess(child);
-        }
         return child ? child.pid : false;
     }
 }

@@ -1,22 +1,29 @@
 import { default as memory } from '../kernel/memory';
 const Reflect = require('harmony-reflect');
+import C from '../kernel/constants';
+
+let pmem;
+const defaults = {
+  data: {},
+  total: 0,
+};
 
 /* tslint:disable:ban-types */
 export function init(): Profiler {
-  const defaults = {
-      data: {},
-      total: 0,
-    };
 
-  if(!memory.has('profiler')){
-    memory.set('profiler', defaults);
+  if(!memory.has(C.SEGMENTS.PROFILER)){
+    memory.set(C.SEGMENTS.PROFILER, defaults);
   }
+  pmem = memory.get(C.SEGMENTS.PROFILER);
 
   const cli: Profiler = {
     clear() {
       const running = isEnabled();
-      memory.set('profiler', defaults);
-      if (running) { memory.get('profiler').start = Game.time; }
+      memory.set(C.SEGMENTS.PROFILER, defaults);
+      pmem = memory.get(C.SEGMENTS.PROFILER);
+      if (pmem && running) {
+        pmem.start = Game.time;
+      }
       return "Profiler Memory cleared";
     },
 
@@ -26,7 +33,9 @@ export function init(): Profiler {
     },
 
     start() {
-      memory.get('profiler').start = Game.time;
+      if(pmem){
+        pmem.start = Game.time;
+      }
       return "Profiler started";
     },
 
@@ -38,12 +47,12 @@ export function init(): Profiler {
     },
 
     stop() {
-      if (!isEnabled()) { return; }
-      let memoryData = memory.get('profiler');
-      const timeRunning = Game.time - memoryData.start!;
-      memoryData.total += timeRunning;
-      delete memory.get('profiler').start;
-      return "Profiler stopped";
+      if (isEnabled() && pmem) {
+        const timeRunning = Game.time - pmem.start!;
+        pmem.total += timeRunning;
+        delete pmem.start;
+        return "Profiler stopped";
+      }
     },
 
     toString() {
@@ -131,24 +140,25 @@ export function profile(
 }
 
 function isEnabled(): boolean {
-  return memory.get('profiler').start !== undefined;
+  return pmem && pmem.start !== undefined;
 }
 
 export function record(key: string | symbol, time: number) {
-  const memoryData = memory.get('profiler');
-  if(memoryData){
-    if (!memoryData.data[key]) {
-      memoryData.data[key] = {
-        calls: 0,
-        time: 0,
-      };
+  if(!pmem){
+    if(!memory.has(C.SEGMENTS.PROFILER)){
+      memory.set(C.SEGMENTS.PROFILER, defaults);
     }
-    memoryData.data[key].calls++;
-    memoryData.data[key].time += time;
-  }else{
-    console.log('Profiler memory not defined');
-    console.log(`  record(${key}, ${time})`);
+    pmem = memory.get(C.SEGMENTS.PROFILER);
+    _.defaults(pmem, defaults);
   }
+  if (!pmem.data[key]) {
+    pmem.data[key] = {
+      calls: 0,
+      time: 0,
+    };
+  }
+  pmem.data[key].calls++;
+  pmem.data[key].time += time;
 }
 
 interface OutputData {
@@ -160,10 +170,9 @@ interface OutputData {
 }
 
 function outputProfilerData() {
-  const memoryData = memory.get('profiler');
-  let totalTicks = memoryData.total;
-  if (memoryData.start) {
-    totalTicks += Game.time - memoryData.start;
+  let totalTicks = pmem.total;
+  if (pmem.start) {
+    totalTicks += Game.time - pmem.start;
   }
 
   ///////
@@ -172,9 +181,9 @@ function outputProfilerData() {
   let calls: number;
   let time: number;
   let result: Partial<OutputData>;
-  const data = _.keys(memoryData.data).map((key) => {
-    calls = memoryData.data[key].calls;
-    time = memoryData.data[key].time;
+  const data = _.keys(pmem.data).map((key) => {
+    calls = pmem.data[key].calls;
+    time = pmem.data[key].time;
     result = {};
     result.name = `${key}`;
     result.calls = calls;

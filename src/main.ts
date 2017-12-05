@@ -2,19 +2,19 @@ import {FS} from './kernel/fs';
 import * as Kernel from './kernel/kernel';
 import { default as  memory } from './kernel/memory';
 import * as mkfs from './mkfs';
-import './plugins/LoAN.inject';
+import './plugins/LoAN.injecT';
+import C from './kernel/constants';
 
-memory.load();
 global.Kernel = Kernel;
 global.FS = FS;
+global.C = C;
 global.memory = memory;
-mkfs.init();
+
+Kernel.setup();
+mkfs.setup();
 
 export function loop(){
-    memory.ensure();
-    Kernel.loadProcessTable();
-    Kernel.schedule();
+    Kernel.init();
     Kernel.run();
-    Kernel.saveProcessTable();
-    memory.save();
+    Kernel.deinit();
 }
