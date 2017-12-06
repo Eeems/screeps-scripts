@@ -1,7 +1,6 @@
 import { FS } from './fs';
 import { default as memory } from './memory';
 import { Priority, Process, Status, ProcessStats } from './process';
-import * as SYSCALL from './syscall';
 import C from './constants';
 
 let processes: {[pid: number]: Process},
@@ -27,10 +26,10 @@ function eachProcess(fn){
         }
     });
 }
-function setPID(pid: number){
+
+export function setPID(pid: number){
     PID = pid;
 }
-
 export function getStats(pid?: number): {[pid: number]: KernelStats}{
     if(pid === undefined){
         const stats = {};
@@ -46,7 +45,7 @@ export function getStats(pid?: number): {[pid: number]: KernelStats}{
 export function getPID(): number{
     return PID;
 }
-export function elavated(): boolean{
+export function elevated(): boolean{
     return PID === 0;
 }
 export function setup(){
@@ -88,8 +87,7 @@ export function init(){
 }
 export function run(): void{
     if(kmem){
-        runInterrupt(C.INTERRUPT.TICK);
-        const noopSYSCALL = {};
+        runInterrupt(C.INTERRUPT.TICKSTART);
         while(queue.length){
             let process = queue.shift();
             while(process){
@@ -112,14 +110,7 @@ export function run(): void{
                                 break;
                             }
                         case Status.ACTIVE:
-                            const res = process.next(process.signal),
-                                syscall = res.value || noopSYSCALL;
-                            if(SYSCALL.isSYSCALL(syscall) && 'run' in syscall){
-                                process.signal = syscall.run(process);
-                            }
-                            if(!res.done){
-                                queue.push(process);
-                            }
+                            process.run();
                             break;
                         case Status.INACTIVE:case Status.KILLED:
                         default:
@@ -163,64 +154,58 @@ export function getProcessMemory(pid: number): any{
     }
     return ram[pid];
 }
-export function startProcess(imageName: string, priority: number, ppid?: number): Process{
-    if(FS.hasImage(imageName)){
-        let pid = 0;
-        while(pid in processes){
-            pid++;
-        }
-        const process = new Process(pid, ppid || 0, priority, imageName);
-        processes[pid] = process;
-        kmem.ram[pid] = {};
-        scheduleProcess(process);
-        const start = Game.cpu.getUsed(),
-            noopSYSCALL = {};
-        try{
-            let res, signal;
-            do{
-                res = process.setup(signal);
-                const syscall = res.value || noopSYSCALL;
-                if(SYSCALL.isSYSCALL(syscall) && 'run' in syscall){
-                    process.signal = signal = syscall.run(process);
-                }
-            }while(!res.done);
-        }catch(e){
-            console.log(`Process ${process.pid} (${process.imageName}) failed`);
-            console.log(e.message);
-            console.log(e.stack);
-            killProcess(process.pid);
-        }finally{
-            const usage = Game.cpu.getUsed() - start;
-            process.record(usage);
-        }
-        return process;
+export function startProcess(imageName: string, priority: number, ppid?: number, args: string[] = []): Process{
+    if(!elevated()){
+        throw new Error('Insufficient privileges');
     }
+    if(!FS.hasImage(imageName)){
+        throw new Error(`Unable to find image ${imageName}`);
+    }
+    let pid = 0;
+    while(pid in processes){
+        pid++;
+    }
+    const process = new Process(pid, ppid || 0, priority, imageName, Status.ACTIVE, args);
+    processes[pid] = process;
+    kmem.ram[pid] = {};
+    scheduleProcess(process);
+    const start = Game.cpu.getUsed();
+    setPID(pid);
+    try{
+        process.setup();
+    }catch(e){
+        console.log(`Process ${process.pid} (${process.imageName}) failed`);
+        console.log(e.message);
+        console.log(e.stack);
+        killProcess(process.pid);
+    }finally{
+        setPID(0);
+        const usage = Game.cpu.getUsed() - start;
+        process.record(usage);
+        runInterrupt(C.INTERRUPT.PROCSTART, pid);
+    }
+    return process;
 }
-export function killProcess(pid: number): boolean{
+export function killProcess(pid: number, signal?: number): boolean{
     eachProcess((process) => {
         if(process.ppid === pid && process.pid !== pid){
             killProcess(process.pid);
         }
     });
     if(pid in processes){
+        runInterrupt(C.INTERRUPT.PROCKILL, pid);
         const process = processes[pid],
             ram = kmem.ram,
-            start = Game.cpu.getUsed(),
-            noopSYSCALL = {};
+            start = Game.cpu.getUsed();
+        setPID(pid);
         try{
-            let res, signal;
-            do{
-                res = process.setup(signal);
-                const syscall = res.value || noopSYSCALL;
-                if(SYSCALL.isSYSCALL(syscall) && 'run' in syscall){
-                    process.signal = signal = syscall.run(process);
-                }
-            }while(!res.done);
+            process.kill(signal);
         }catch(e){
             console.log(`Process ${process.pid} (${process.imageName}) failed`);
             console.log(e.message);
             console.log(e.stack);
         }finally{
+            setPID(0);
             const usage = Game.cpu.getUsed() - start;
             process.record(usage);
         }
@@ -240,7 +225,10 @@ export function killProcess(pid: number): boolean{
     }
     return false;
 }
-export function getProcess(pid: number): Process{
+export function getProcess(pid?: number): Process{
+    if(pid === undefined){
+        pid = PID;
+    }
     return processes[pid];
 }
 export function getChildProcesses(pid: number): Process[]{
@@ -266,18 +254,14 @@ export function scheduleProcess(process: Process): void{
     schedule();
 }
 export function loadProcessTable(): void{
-    // @todo determine if this is slower than lodash in node 8
     processes = {};
     const processData = kmem.processes || [];
-    for(const [pid, ppid, imageName, priority, ...remaining] of processData){
+    for(const [pid, ppid, imageName, priority, status, sleepInfo, ...args] of processData){
         try{
-            const process = new Process(pid, ppid, priority, imageName);
-            process.setMemory(getProcessMemory(pid));
+            const process = new Process(pid, ppid, priority, imageName, status, args);
             processes[pid] = process;
-            const sleepInfo = remaining.pop();
             if(sleepInfo){
                 process.sleepInfo = sleepInfo;
-                process.status = Status.SLEEP;
             }
         }catch(e){
             console.log(`Error while loading: ${e.message}`);
@@ -294,14 +278,15 @@ export function saveProcessTable(): void{
                 process.ppid,
                 process.imageName,
                 process.priority,
-                process.sleepInfo
+                process.status,
+                process.sleepInfo,
+                ...process.args
             ]);
         }
     });
     kmem.processes = table;
 }
 export function loadInterruptTable(){
-    // @todo determine if this is slower than lodash in node 8
     interrupts = {};
     const interruptData = imem.interrupts || [];
     for(const [interrupt, interrupt_type, pid] of interruptData){
@@ -310,19 +295,18 @@ export function loadInterruptTable(){
     }
 }
 export function saveInterruptTable(){
-    // @todo determine if this is slower than lodash in node 8
     const table = [];
     _.each(_.keys(interrupts), (interrupt) => {
         _.each(_.keys(interrupts[interrupt]), (interrupt_type) => {
             _.each(interrupts[interrupt][interrupt_type], (process) => {
-                table.push([interrupt, interrupt_type, process.pid]);
+                table.push([~~interrupt, interrupt_type, process.pid]);
             });
         });
     });
     imem.interrupts = table;
 }
 export function setInterrupt(process: Process, interrupt: number, interrupt_type?: string){
-    if(!elavated()){
+    if(!elevated()){
         throw new Error('Insufficient privileges');
     }
     if(!process || process.pid === undefined){
@@ -343,36 +327,25 @@ export function setInterrupt(process: Process, interrupt: number, interrupt_type
     }
 }
 export function runInterrupt(interrupt: number, signal?: any){
-    if(!elavated()){
+    if(!elevated()){
         throw new Error('Insufficient privileges');
     }
     if(interrupts[interrupt]){
-        // @todo determine if this is slower than lodash in node 8
-        const noopSYSCALL = {};
         _.each(_.keys(interrupts[interrupt]), (interrupt_type) => {
-            _.each(interrupts[interrupt][interrupt_type], (process) => {
-                const fn = process[interrupt_type].bind(process);
+            _.each(interrupts[interrupt][interrupt_type], (process, i) => {
                 if(interrupt_type === C.INTERRUPT_TYPE.WAKE){
                     process.status = Status.ACTIVE;
+                    interrupts[interrupt][interrupt_type].splice(i, 1);
                 }
-                signal = {
-                    interrupt: interrupt,
-                    signal: signal
-                };
                 const start = Game.cpu.getUsed();
+                setPID(process.pid);
                 try{
-                    let res;
-                    do{
-                        res = fn(signal);
-                        const syscall = res.value || noopSYSCALL;
-                        if(SYSCALL.isSYSCALL(syscall) && 'run' in syscall){
-                            process.signal = signal = syscall.run(process);
-                        }
-                    }while(!res.done);
+                    process[interrupt_type].call(process, interrupt, interrupt_type, signal);
                 }catch(e){
                     console.log(`Process ${process.pid} (${process.imageName}) failed`);
                     console.log(e.message);
                     console.log(e.stack);
+                    setPID(0);
                     killProcess(process.pid);
                 }finally{
                     const usage = Game.cpu.getUsed() - start;
@@ -380,5 +353,6 @@ export function runInterrupt(interrupt: number, signal?: any){
                 }
             });
         });
+        setPID(0);
     }
 }

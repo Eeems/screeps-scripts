@@ -1,6 +1,6 @@
 import { FS } from './fs';
-import {default as Image, ImageProps} from './image';
-import { getChildProcesses, getProcess } from './kernel';
+import {ImageProps} from './image';
+import { getChildProcesses, getProcess, getProcessMemory } from './kernel';
 
 export enum Priority {
     Immediate = -1,
@@ -28,47 +28,42 @@ export class Process{
     public ppid: number;
     public priority: number | Priority;
     public status: number;
+    public args: string[];
     public sleepInfo: {
         start: number,
         duration: number
     };
     public signal;
     public cpu: ProcessStats;
-    protected memory: any;
-    private _imageName: any;
-    private _image: Image;
-    private _setup: Iterator<any>;
-    private _next: Iterator<any>;
-    private _interrupt: Iterator<any>;
-    private _wake: Iterator<any>;
-    private _kill: Iterator<any>;
-    public constructor(pid: number, ppid: number, priority: number, imageName: string){
+    public setup: any;
+    public run: any;
+    public interrupt: any;
+    public wake: any;
+    public kill: any;
+    public memory: any;
+    private _imageName: string;
+    public constructor(pid: number, ppid: number, priority: number, imageName: string, status: Status, args: string[] = []){
         this.pid = pid;
         this.ppid = ppid;
         this.priority = priority;
-        this.status = Status.ACTIVE;
-        this._imageName = imageName;
+        this.status = status;
+        this.args = args;
         this.cpu = {
             avg: 0,
             usage: 0,
             runs: 0,
             max: 0
         };
-    }
-    public setMemory(memory: any){
-        this.memory = memory;
-    }
-    private get image(){
-        if(this._image === undefined){
-            const image = _.defaultsDeep({}, FS.getImage(this.imageName));
-            for(let name of ImageProps){
-                if(name in image){
-                    image[name] = image[name].bind(this);
-                }
+        this._imageName = imageName;
+        this.memory = getProcessMemory(pid);
+        const image = FS.getImage(imageName);
+        for(const name of ImageProps){
+            if(name in image){
+                this[name] = image[name].bind(this);
+            }else{
+                this[name] = () => {};
             }
-            this._image = image;
         }
-        return this._image;
     }
     public get imageName(){
         return this._imageName;
@@ -78,91 +73,6 @@ export class Process{
     }
     public get children(){
         return getChildProcesses(this.pid);
-    }
-    public setup(signal?: any): IteratorResult<any>{
-        this.signal = signal;
-        if(!this.image || !this.image.setup){
-            return {
-                done: true,
-                value: 0
-            };
-        }
-        if(!this._setup){
-            this._setup = this.image.setup();
-        }
-        const res = this._setup.next(signal);
-        return {
-            done: res.done,
-            value: res.value || 0
-        };
-    }
-    public next(signal?: any): IteratorResult<any>{
-        this.signal = signal;
-        if(!this.image || !this.image.next){
-            return {
-                done: true,
-                value: 0
-            };
-        }
-        if(!this._next){
-            this._next = this.image.next();
-        }
-        const res = this._next.next(signal);
-        return {
-            done: res.done,
-            value: res.value || 0
-        };
-    }
-    public interrupt(signal?: any): IteratorResult<any>{
-        this.signal = signal;
-        if(!this.image || !this.image.interrupt){
-            return {
-                done: true,
-                value: 0
-            };
-        }
-        if(!this._interrupt){
-            this._interrupt = this.image.interrupt();
-        }
-        const res = this._interrupt.next(signal);
-        return {
-            done: res.done,
-            value: res.value || 0
-        };
-    }
-    public wake(signal?: any): IteratorResult<any>{
-        this.signal = signal;
-        if(!this.image || !this.image.wake){
-            return {
-                done: true,
-                value: 0
-            };
-        }
-        if(!this._wake){
-            this._wake = this.image.wake();
-        }
-        const res = this._wake.next(signal);
-        return {
-            done: res.done,
-            value: res.value || 0
-        };
-    }
-    public kill(signal?: any): IteratorResult<any>{
-        this.signal = signal;
-        if(!this.image || !this.image.kill){
-            return {
-                done: true,
-                value: 0
-            };
-        }
-        if(!this._kill){
-            this._kill = this.image.kill();
-        }
-        const res = this._kill.next(signal);
-        return {
-            done: res.done,
-            value: res.value || 0
-        };
     }
     public record(usage: number){
         this.cpu.runs++;

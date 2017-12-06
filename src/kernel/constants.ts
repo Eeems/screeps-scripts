@@ -7,11 +7,13 @@ enum SEGMENTS {
 }
 
 enum INTERRUPT {
-    TICK = 0,
+    TICKSTART = 0,
     TICKEND,
     SEGMENT,
     CREEP,
-    VISION
+    VISION,
+    PROCSTART,
+    PROCKILL
 }
 
 enum INTERRUPT_TYPE {

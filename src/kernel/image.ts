@@ -1,9 +1,9 @@
-export const ImageProps = ['setup', 'next', 'interrupt', 'wake', 'kill'];
+export const ImageProps = ['setup', 'run', 'interrupt', 'wake', 'kill'];
 
 export default interface Image {
-    setup?: () => Iterator<any>;
-    next?: () => Iterator<any>;
-    interrupt?: () => Iterator<any>;
-    wake?: () => Iterator<any>;
-    kill?: () => Iterator<any>;
+    setup?: () => any;
+    run?: () => any;
+    interrupt?: (interrupt: number, interrupt_type: string, signal?: any) => any;
+    wake?: (interrupt: number, interrupt_type: string) => any;
+    kill?: (e?: any) => any;
 }

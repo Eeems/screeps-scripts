@@ -1,11 +1,11 @@
-import {Priority} from '../kernel/process';
-import {startProcess, setInterrupt} from '../kernel/kernel';
+import {Priority, Process} from '../kernel/process';
 import C from '../kernel/constants';
+import * as SYSCALL from '../kernel/syscall';
 
-function ensureProcess(priority: Priority, imageName: string): void{
-    if(!_.contains(this.children.map((process) => process.imageName), imageName)){
-        // I'm PID 0 bitch. I can run syscalls
-        if(!startProcess(imageName, priority, this.pid)){
+function ensureProcess(priority: Priority, imageName: string, args: string[] = []): void{
+    if(!_.filter(this.children, (process: Process) => imageName === process.imageName && args.join(' ') === process.args.join(' ')).length){
+        console.log(`Launching ${imageName}`);
+        if(!SYSCALL.fork(priority, imageName, args)){
             console.log(`Unable to launch ${imageName}`);
         }
     }
@@ -13,12 +13,15 @@ function ensureProcess(priority: Priority, imageName: string): void{
 
 export default {
     setup: function(): void{
-        // I'm PID 0 bitch. I can run syscalls
-        setInterrupt(this, C.INTERRUPT.TICK);
+        SYSCALL.interrupt(C.INTERRUPT.TICKSTART);
+        SYSCALL.interrupt(C.INTERRUPT.PROCKILL);
     },
     interrupt: function(): void{
         const ensure = ensureProcess.bind(this);
         ensure(Priority.Always, '/bin/profiled');
+        _.each(_.keys(Game.spawns), (spawn) => {
+            ensure(Priority.Always, '/bin/spawnd', [spawn]);
+        });
     },
     kill: function(): never{
         throw Error('PID 0 should never be killed!');

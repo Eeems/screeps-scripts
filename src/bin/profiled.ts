@@ -1,10 +1,10 @@
-import * as SYSCALL from '../kernel/syscall/';
+import * as SYSCALL from '../kernel/syscall';
 import {getStats, KernelStats} from '../kernel/kernel';
 import C from '../kernel/constants';
 
 export default {
-    setup: function*(){
-        yield SYSCALL.interrupt(C.INTERRUPT.TICKEND);
+    setup: function(){
+        SYSCALL.interrupt(C.INTERRUPT.TICKEND);
     },
     interrupt: function(): void{
         const stats = getStats() as {[pid: number]: KernelStats},
