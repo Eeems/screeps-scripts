@@ -1,18 +1,26 @@
 import {Priority} from '../kernel/process';
-import * as SYSCALL from '../kernel/syscall/';
+import {startProcess, setInterrupt} from '../kernel/kernel';
+import C from '../kernel/constants';
 
-function* ensureProcess(priority: Priority, imageName: string){
+function ensureProcess(priority: Priority, imageName: string): void{
     if(!_.contains(this.children.map((process) => process.imageName), imageName)){
-        const pid = yield new SYSCALL.Fork(priority, imageName);
-        if(!pid){
+        // I'm PID 0 bitch. I can run syscalls
+        if(!startProcess(imageName, priority, this.pid)){
             console.log(`Unable to launch ${imageName}`);
         }
     }
 }
 
 export default {
-    next: function*(): IterableIterator<any>{
+    setup: function(): void{
+        // I'm PID 0 bitch. I can run syscalls
+        setInterrupt(this, C.INTERRUPT.TICK);
+    },
+    interrupt: function(): void{
         const ensure = ensureProcess.bind(this);
-        yield* ensure(Priority.Always, '/bin/profiled');
+        ensure(Priority.Always, '/bin/profiled');
+    },
+    kill: function(): never{
+        throw Error('PID 0 should never be killed!');
     }
 };

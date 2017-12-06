@@ -1,6 +1,6 @@
 import { profile } from '../profiler/Profiler';
 import { FS } from './fs';
-import Image from './image';
+import {default as Image, ImageProps} from './image';
 import { getChildProcesses, getProcess } from './kernel';
 
 export enum Priority {
@@ -38,6 +38,7 @@ export class Process{
     protected memory: any;
     private _imageName: any;
     private _image: Image;
+    private _setup: Iterator<any>;
     private _next: Iterator<any>;
     private _interrupt: Iterator<any>;
     private _wake: Iterator<any>;
@@ -62,7 +63,7 @@ export class Process{
     private get image(){
         if(this._image === undefined){
             const image = _.defaultsDeep({}, FS.getImage(this.imageName));
-            for(let name of ['next', 'interrupt', 'wake', 'kill']){
+            for(let name of ImageProps){
                 if(name in image){
                     image[name] = image[name].bind(this);
                 }
@@ -79,6 +80,23 @@ export class Process{
     }
     public get children(){
         return getChildProcesses(this.pid);
+    }
+    public setup(signal?: any): IteratorResult<any>{
+        this.signal = signal;
+        if(!this.image || !this.image.setup){
+            return {
+                done: true,
+                value: 0
+            };
+        }
+        if(!this._setup){
+            this._setup = this.image.setup();
+        }
+        const res = this._setup.next(signal);
+        return {
+            done: res.done,
+            value: res.value || 0
+        };
     }
     public next(signal?: any): IteratorResult<any>{
         this.signal = signal;

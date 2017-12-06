@@ -7,22 +7,22 @@ enum SEGMENTS {
     PROFILER
 }
 
-enum INTERRUPTS {
+enum INTERRUPT {
     TICK = 0,
+    TICKEND,
     SEGMENT,
-    SLEEP,
     CREEP,
     VISION
 }
 
 enum INTERRUPT_TYPE {
-    INTERRUPT = 0,
-    WAKE
+    INTERRUPT = 'interrupt',
+    WAKE = 'wake'
 }
 
 export default {
     SEGMENTS,
-    INTERRUPTS,
+    INTERRUPT,
     INTERRUPT_TYPE,
     MEMORY_FORMAT
 }

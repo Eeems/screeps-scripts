@@ -14,3 +14,7 @@ export class Fork implements SYSCALL{
         return child ? child.pid : false;
     }
 }
+
+export default function fork(priority: number, imageName: string): Fork{
+    return new Fork(priority, imageName);
+}

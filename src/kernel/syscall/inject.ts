@@ -11,3 +11,6 @@ export class Inject implements SYSCALL{
         process;
     }
 }
+export default function inject(pid: number): Inject{
+    return new Inject(pid);
+}

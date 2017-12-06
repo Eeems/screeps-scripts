@@ -1,11 +1,11 @@
 import { wrap } from '../profiler/Profiler';
-import {default as Image} from './image';
+import {default as Image, ImageProps} from './image';
 
 export namespace FS {
     const _images: Array<IterableIterator<any>> = [];
 
     export const makeImage = wrap((image: {}): Image => {
-            for(let name of ['next', 'interrupt', 'wake', 'kill']){
+            for(let name of ImageProps){
                 if(name in image){
                     image[name] = makeGenerator(image[name]);
                 }
@@ -18,7 +18,7 @@ export namespace FS {
                 return fn;
             }
             return function*(...args){
-                return fn(...args);
+                return fn.apply(this, ...args);
             };
         }, 'FileSystem'),
         setImage = wrap((name: string, image: Image) => {
