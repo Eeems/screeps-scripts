@@ -1,4 +1,3 @@
-import { profile } from '../profiler/Profiler';
 import { FS } from './fs';
 import {default as Image, ImageProps} from './image';
 import { getChildProcesses, getProcess } from './kernel';
@@ -56,7 +55,6 @@ export class Process{
             max: 0
         };
     }
-    @profile
     public setMemory(memory: any){
         this.memory = memory;
     }

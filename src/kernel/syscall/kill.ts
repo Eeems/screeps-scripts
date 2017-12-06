@@ -12,3 +12,7 @@ export class Kill implements SYSCALL{
         process.kill(0);
     }
 }
+
+export default function kill(status: number){
+    return new Kill(status);
+}

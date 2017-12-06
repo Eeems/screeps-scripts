@@ -3,8 +3,7 @@ const MEMORY_FORMAT = 'json';
 enum SEGMENTS {
     CONFIG = 0,
     KERNEL,
-    INTERRUPT,
-    PROFILER
+    INTERRUPT
 }
 
 enum INTERRUPT {

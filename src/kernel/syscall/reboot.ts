@@ -7,3 +7,7 @@ export class Reboot implements SYSCALL{
         process;
     }
 }
+
+export default function reboot(){
+    return new Reboot();
+}

@@ -14,3 +14,7 @@ export class Sleep implements SYSCALL{
         };
     }
 }
+
+export default function sleep(ticks: number){
+    return new Sleep(ticks);
+}
