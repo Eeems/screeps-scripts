@@ -1,5 +1,6 @@
 import {createCodec, decode, encode} from 'msgpack-lite';
 import {compress, decompress} from 'lz-string';
+import {BSON} from 'bson';
 import * as zlib from 'zlib';
 import C from '../kernel/constants';
 
@@ -10,7 +11,8 @@ const options = {
             uint8array: true
         })
     },
-    maxMemory = 2 * 1024 * 1024;
+    maxMemory = 2 * 1024 * 1024,
+    bson = new BSON();
     // maxSegmentMemory = 100 * 1024;
 
 export class MemoryBuffer{
@@ -38,6 +40,10 @@ export class MemoryBuffer{
                 }
                 return decode(uint, options);
             }
+        },
+        bson: {
+            encode: (data) => bson.serialize(data).toString(),
+            decode: (data) => bson.deserialize(Buffer.from(data))
         }
     };
     static compression = {
