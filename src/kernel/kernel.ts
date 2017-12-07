@@ -39,6 +39,8 @@ export function getStats(pid?: number): {[pid: number]: KernelStats}{
             }, process.cpu);
         });
         return stats;
+    }else if(pid === -1){
+        return kmem.cpu;
     }
     return getProcess(pid).cpu;
 }
@@ -58,6 +60,14 @@ export function init(){
     reboot();
     if(memory.has(C.SEGMENTS.KERNEL)){
         kmem = memory.get(C.SEGMENTS.KERNEL);
+        if(!kmem.cpu){
+            kmem.cpu = {
+                avg: 0,
+                usage: 0,
+                runs: 0,
+                max: 0
+            };
+        }
         if(!kmem.processes){
             kmem.processes = [];
         }
@@ -140,7 +150,19 @@ export function deinit(){
     if(memory.has(C.SEGMENTS.INTERRUPT)){
         saveInterruptTable();
     }
+    record();
+    runInterrupt(C.INTERRUPT.DEINIT);
     memory.deinit();
+}
+export function record(){
+    if(kmem){
+        const usage = Game.cpu.getUsed()
+        kmem.cpu.avg = ((kmem.cpu.avg * kmem.cpu.runs) + usage) / (++kmem.cpu.runs);
+        kmem.cpu.usage = usage;
+        if(usage > kmem.cpu.max){
+            kmem.cpu.max = usage;
+        }
+    }
 }
 export function reboot(): void{
         processes = {};

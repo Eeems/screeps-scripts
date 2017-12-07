@@ -1,6 +1,5 @@
 import {createCodec, decode, encode} from 'msgpack-lite';
 import * as lzstring from 'lz-string';
-import * as zlib from 'zlib';
 import C from '../kernel/constants';
 
 const options = {
@@ -13,6 +12,21 @@ const options = {
     maxMemory = 2 * 1024 * 1024;
     // maxSegmentMemory = 100 * 1024;
 
+function uint8ToStr(uint: Uint8Array): string{
+    let str = '';
+    for(let i=0, j = uint.length; i<j; ++i){
+        str += String.fromCharCode(uint[i]);
+    }
+    return str;
+}
+function strToUint8(str: string): Uint8Array{
+    const uint = new Uint8Array(str.length);
+    for(let i=0, j = str.length; i<j; ++i){
+        uint[i] = str.charCodeAt(i);
+    }
+    return uint;
+}
+
 export class MemoryBuffer{
     private _data: any;
     private _serializer: string;
@@ -23,21 +37,8 @@ export class MemoryBuffer{
             decode: JSON.parse.bind(JSON)
         },
         msgpack: {
-            encode: (data) => {
-                const uint = encode(data, options);
-                let str = '';
-                for(let i=0, j = uint.length; i<j; ++i){
-                    str += String.fromCharCode(uint[i]);
-                }
-                return str;
-            },
-            decode: (data) => {
-                const uint = new Uint8Array(data.length);
-                for(let i=0, j = data.length; i<j; ++i){
-                    uint[i] = data.charCodeAt(i);
-                }
-                return decode(uint, options);
-            }
+            encode: (data) => uint8ToStr(encode(data, options)),
+            decode: (data) => decode(strToUint8(data), options)
         }
     };
     static compression = {
@@ -46,16 +47,8 @@ export class MemoryBuffer{
             decompress: (data) => data
         },
         lzstring: {
-            compress: (data) => lzstring.compress(data),
-            decompress: (data) => lzstring.decompress(data)
-        },
-        gzip: {
-            compress: (data) => zlib.gzipSync(data).toString('utf8'),
-            decompress: (data) => zlib.gunzipSync(data).toString('utf8')
-        },
-        deflate: {
-            compress: (data) => zlib.deflateSync(data).toString('utf8'),
-            decompress: (data) => zlib.inflateSync(data).toString('utf8')
+            compress: (data) => lzstring.compressToUTF16(data),
+            decompress: (data) => lzstring.decompressFromUTF16(data)
         }
     };
     public constructor(data?: string, format: string = 'json'){
@@ -88,7 +81,11 @@ export class MemoryBuffer{
         return valid;
     }
     public set(key: string | number, val: any): void{
-        this._data[key] = val;
+        try{
+            this._data[key] = val;
+        }catch(e){
+            throw new Error(`Unable to set memory ${key}\n${e}`);
+        }
     }
     public remove(key: string | number): void{
         delete this._data[key];

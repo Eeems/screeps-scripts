@@ -1,4 +1,4 @@
-const MEMORY_FORMAT = 'json';
+const MEMORY_FORMAT = 'msgpack+lzstring';
 
 enum SEGMENTS {
     CONFIG = 0,
@@ -9,6 +9,7 @@ enum SEGMENTS {
 enum INTERRUPT {
     TICKSTART = 0,
     TICKEND,
+    DEINIT,
     SEGMENT,
     CREEP,
     VISION,
