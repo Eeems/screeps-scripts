@@ -2,21 +2,16 @@ import {startProcess, setInterrupt, getPID, killProcess, getProcess, setPID} fro
 import {Status} from './process';
 import C from './constants';
 
-let PID;
-
-function trust(trusted: boolean){
-    if(trusted){
-        PID = getPID();
-        setPID(0);
-    }else{
-        setPID(PID);
-    }
+function trust(){
+    const PID = getPID();
+    setPID(0);
+    return PID;
 }
 
 export function fork(priority: number, imageName: string, args: string[] = []){
-    trust(true);
+    const PID = trust();
     const child = startProcess(imageName, priority, PID, args);
-    trust(false);
+    setPID(PID);
     return child ? child.pid : false;
 }
 
@@ -25,15 +20,15 @@ export function interrupt(interrupt: number, interruptType?: string){
     if(interruptType === C.INTERRUPT_TYPE.WAKE){
         process.status = Status.INACTIVE;
     }
-    trust(true);
+    const PID = trust();
     setInterrupt(process, interrupt, interruptType);
-    trust(false);
+    setPID(PID);
 }
 
 export function kill(status: number = 0){
-    trust(true);
+    const PID = trust();
     killProcess(PID, status);
-    trust(false);
+    setPID(PID);
 }
 
 export function priority(priority: number){

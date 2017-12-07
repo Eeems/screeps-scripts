@@ -1,5 +1,5 @@
 import * as SYSCALL from '../kernel/syscall';
-import {getStats, KernelStats} from '../kernel/kernel';
+import {getStats, KernelStats, getProcess} from '../kernel/kernel';
 import C from '../kernel/constants';
 
 export default {
@@ -9,9 +9,9 @@ export default {
     interrupt: function(): void{
         const stats = getStats() as {[pid: number]: KernelStats},
             longest = (_.max(stats, (i: KernelStats) => i.imageName.length).imageName || '').length;
-        console.log(`${_.padRight('PID', 3)} ${_.padRight('PROCESS', longest)} AVERAGE CPU`);
+        console.log(`${_.padRight('PID', 3)} ${_.padRight('PROCESS', longest)} AVERAGE ARGS`);
         _.each(stats, (cpu: KernelStats, pid) => {
-            console.log(`${_.padRight(pid, 3)} ${_.padRight(cpu.imageName, longest)} ${cpu.avg.toPrecision(3)}`);
+            console.log(`${_.padRight(pid, 3)} ${_.padRight(cpu.imageName, longest)} ${_.padRight(cpu.avg.toPrecision(3), 7)} ${getProcess(~~pid).args.join(' ')}`);
         });
     }
 };

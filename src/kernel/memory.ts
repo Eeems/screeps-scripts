@@ -1,6 +1,5 @@
 import {createCodec, decode, encode} from 'msgpack-lite';
-import {compress, decompress} from 'lz-string';
-import {BSON} from 'bson';
+import * as lzstring from 'lz-string';
 import * as zlib from 'zlib';
 import C from '../kernel/constants';
 
@@ -11,8 +10,7 @@ const options = {
             uint8array: true
         })
     },
-    maxMemory = 2 * 1024 * 1024,
-    bson = new BSON();
+    maxMemory = 2 * 1024 * 1024;
     // maxSegmentMemory = 100 * 1024;
 
 export class MemoryBuffer{
@@ -40,10 +38,6 @@ export class MemoryBuffer{
                 }
                 return decode(uint, options);
             }
-        },
-        bson: {
-            encode: (data) => bson.serialize(data).toString(),
-            decode: (data) => bson.deserialize(Buffer.from(data))
         }
     };
     static compression = {
@@ -52,16 +46,16 @@ export class MemoryBuffer{
             decompress: (data) => data
         },
         lzstring: {
-            compress,
-            decompress
+            compress: (data) => lzstring.compress(data),
+            decompress: (data) => lzstring.decompress(data)
         },
         gzip: {
-            compress: zlib.gzipSync.bind(zlib),
-            decompress: zlib.gunzipSync.bind(zlib)
+            compress: (data) => zlib.gzipSync(data).toString('utf8'),
+            decompress: (data) => zlib.gunzipSync(data).toString('utf8')
         },
         deflate: {
-            compress: zlib.deflateSync.bind(zlib),
-            decompress: zlib.inflateSync.bind(zlib)
+            compress: (data) => zlib.deflateSync(data).toString('utf8'),
+            decompress: (data) => zlib.inflateSync(data).toString('utf8')
         }
     };
     public constructor(data?: string, format: string = 'json'){
@@ -114,7 +108,11 @@ export class MemoryBuffer{
         if(!compressionFns){
             throw new Error('Invalid compression');
         }
-        this._data = serializerFns.decode(compressionFns.decompress(data));
+        try{
+            this._data = serializerFns.decode(compressionFns.decompress(data));
+        }catch(e){
+            throw new Error(`Unable to load data with format: ${this._serializer}+${this._compression}\n${e}`);
+        }
     }
     public load(data: any): void{
         this._data = data;
@@ -122,7 +120,11 @@ export class MemoryBuffer{
     public toString(): string{
         const serializerFns = MemoryBuffer.serializers[this._serializer],
             compressionFns = MemoryBuffer.compression[this._compression];
-        return compressionFns.decompress(serializerFns.encode(this._data));
+        try{
+            return compressionFns.compress(serializerFns.encode(this._data));
+        }catch(e){
+            throw new Error(`Unable to return data with format: ${this._serializer}+${this._compression}\n${e}`);
+        }
     }
     public toJSON(): any{
         return this._data;
@@ -130,11 +132,19 @@ export class MemoryBuffer{
 }
 
 namespace memory{
-    export let data: MemoryBuffer = new MemoryBuffer(C.MEMORY_FORMAT);
+    export let data: MemoryBuffer = new MemoryBuffer(undefined, C.MEMORY_FORMAT);
     export function setup(): void{
-        data.from(RawMemory.get());
-        if(typeof data.toJSON() !== 'object'){
-            reset();
+        const mem = RawMemory.get();
+        try{
+            data.from(mem);
+            if(typeof data.toJSON() !== 'object' && data != null){
+                console.log('ERROR: Memory invalid.');
+                reset();
+            }
+        }catch(e){
+            console.log(`ERROR: Could not read memory.\n${e}`);
+            console.log(mem);
+            reset()
         }
     }
     export function init(): void{}
@@ -171,6 +181,7 @@ namespace memory{
         data.defaultsDeep(d);
     }
     export function reset(){
+        console.log('Memory reset');
         data.load({});
     }
     export function getFreeMemory(){

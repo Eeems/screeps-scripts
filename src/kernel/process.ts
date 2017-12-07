@@ -75,8 +75,7 @@ export class Process{
         return getChildProcesses(this.pid);
     }
     public record(usage: number){
-        this.cpu.runs++;
-        this.cpu.avg = (this.cpu.avg + usage) / 2;
+        this.cpu.avg = ((this.cpu.avg * this.cpu.runs) + usage) / (++this.cpu.avg);
         this.cpu.usage = usage;
         if(usage > this.cpu.max){
             this.cpu.max = usage;

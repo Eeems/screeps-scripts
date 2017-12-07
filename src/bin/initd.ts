@@ -22,6 +22,9 @@ export default {
         _.each(_.keys(Game.spawns), (spawn) => {
             ensure(Priority.Always, '/bin/spawnd', [spawn]);
         });
+        _.each(_.keys(Game.creeps), (creep) => {
+            ensure(Priority.AlwaysLast, '/bin/creep', [creep]);
+        });
     },
     kill: function(): never{
         throw Error('PID 0 should never be killed!');
