@@ -5,7 +5,7 @@ import C from './constants';
 
 let processes: {[pid: number]: Process},
     interrupts: {
-        [interrupt: number]:  {[interrupt_type: string]: Process[]}
+        [interrupt: number]:  {[interrupt_type: number]: Process[]}
     },
     queue: Process[],
     PID = 0,
@@ -13,7 +13,9 @@ let processes: {[pid: number]: Process},
     imem;
 
 export type KernelStats  =  ProcessStats & {
-    imageName: string
+    imageName: string,
+    args: string[],
+    pid: number
 };
 
 function eachProcess(fn){
@@ -35,9 +37,16 @@ export function getStats(pid?: number): {[pid: number]: KernelStats}{
         const stats = {};
         eachProcess((process) => {
             stats[process.pid] = _.defaults({
-                imageName: process.imageName
+                imageName: process.imageName,
+                args: process.args,
+                pid: process.pid,
             }, process.cpu);
         });
+        stats[-1] = _.defaults({
+            imageName: kmem.kernel.imageName,
+            args: [],
+            pid: -1
+        }, kmem.kernel.cpu);
         return stats;
     }else if(pid === -1){
         return kmem.cpu;
@@ -56,6 +65,7 @@ export function setup(){
     memory.activate(C.SEGMENTS.INTERRUPT);
 }
 export function init(){
+    const start = Game.cpu.getUsed();
     memory.init();
     reboot();
     if(memory.has(C.SEGMENTS.KERNEL)){
@@ -66,6 +76,17 @@ export function init(){
                 usage: 0,
                 runs: 0,
                 max: 0
+            };
+        }
+        if(!kmem.kernel){
+            kmem.kernel = {
+                cpu: {
+                    avg: 0,
+                    usage: 0,
+                    runs: 0,
+                    max: 0
+                },
+                imageName: 'Kernel'
             };
         }
         if(!kmem.processes){
@@ -93,6 +114,7 @@ export function init(){
             }
         }
         scheduleProcesses();
+        record(Game.cpu.getUsed() - start);
     }
 }
 export function run(): void{
@@ -145,22 +167,32 @@ export function run(): void{
 }
 export function deinit(){
     if(memory.has(C.SEGMENTS.KERNEL)){
+        const start = Game.cpu.getUsed();
         saveProcessTable();
-    }
-    if(memory.has(C.SEGMENTS.INTERRUPT)){
-        saveInterruptTable();
+        if(memory.has(C.SEGMENTS.INTERRUPT)){
+            saveInterruptTable();
+        }
+        record(Game.cpu.getUsed() - start);
     }
     record();
     runInterrupt(C.INTERRUPT.DEINIT);
     memory.deinit();
 }
-export function record(){
+export function record(usage?: number){
     if(kmem){
-        const usage = Game.cpu.getUsed()
-        kmem.cpu.avg = ((kmem.cpu.avg * kmem.cpu.runs) + usage) / (++kmem.cpu.runs);
-        kmem.cpu.usage = usage;
-        if(usage > kmem.cpu.max){
-            kmem.cpu.max = usage;
+        if(!usage){
+            usage = Game.cpu.getUsed();
+            kmem.cpu.avg = ((kmem.cpu.avg * kmem.cpu.runs) + usage) / (++kmem.cpu.runs);
+            kmem.cpu.usage = usage;
+            if(usage > kmem.cpu.max){
+                kmem.cpu.max = usage;
+            }
+        }else{
+            kmem.kernel.cpu.avg = ((kmem.kernel.cpu.avg * kmem.kernel.cpu.runs) + usage) / (++kmem.kernel.cpu.runs);
+            kmem.kernel.cpu.usage = usage;
+            if(usage > kmem.kernel.cpu.max){
+                kmem.kernel.cpu.max = usage;
+            }
         }
     }
 }
@@ -327,7 +359,7 @@ export function saveInterruptTable(){
     });
     imem.interrupts = table;
 }
-export function setInterrupt(process: Process, interrupt: number, interrupt_type?: string){
+export function setInterrupt(process: Process, interrupt: number, interrupt_type?: number){
     if(!elevated()){
         throw new Error('Insufficient privileges');
     }
@@ -355,14 +387,19 @@ export function runInterrupt(interrupt: number, signal?: any){
     if(interrupts[interrupt]){
         _.each(_.keys(interrupts[interrupt]), (interrupt_type) => {
             _.each(interrupts[interrupt][interrupt_type], (process, i) => {
-                if(interrupt_type === C.INTERRUPT_TYPE.WAKE){
+                if(~~interrupt_type === C.INTERRUPT_TYPE.WAKE){
                     process.status = Status.ACTIVE;
                     interrupts[interrupt][interrupt_type].splice(i, 1);
                 }
-                const start = Game.cpu.getUsed();
+                const args = [interrupt, interrupt_type, signal],
+                    start = Game.cpu.getUsed();
                 setPID(process.pid);
                 try{
-                    process[interrupt_type].call(process, interrupt, interrupt_type, signal);
+                    if(~~interrupt_type === C.INTERRUPT_TYPE.WAKE){
+                        process.wake.apply(process, args);
+                    }else{
+                        process.interrupt.apply(process, args);
+                    }
                 }catch(e){
                     console.log(`Process ${process.pid} (${process.imageName}) failed`);
                     console.log(e.message);

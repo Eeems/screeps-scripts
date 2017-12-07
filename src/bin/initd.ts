@@ -4,7 +4,7 @@ import * as SYSCALL from '../kernel/syscall';
 
 function ensureProcess(priority: Priority, imageName: string, args: string[] = []): void{
     if(!_.filter(this.children, (process: Process) => imageName === process.imageName && args.join(' ') === process.args.join(' ')).length){
-        console.log(`Launching ${imageName}`);
+        console.log(`Launching ${imageName} ${args.join(' ')}`);
         if(!SYSCALL.fork(priority, imageName, args)){
             console.log(`Unable to launch ${imageName}`);
         }
@@ -19,8 +19,8 @@ export default {
     interrupt: function(): void{
         const ensure = ensureProcess.bind(this);
         ensure(Priority.Always, '/bin/profiled');
-        _.each(_.keys(Game.spawns), (spawn) => {
-            ensure(Priority.Always, '/bin/spawnd', [spawn]);
+        _.each(_.keys(Game.rooms), (room) => {
+            ensure(Priority.Always, '/bin/roomd', [room]);
         });
         _.each(_.keys(Game.creeps), (creep) => {
             ensure(Priority.AlwaysLast, '/bin/creep', [creep]);

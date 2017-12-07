@@ -15,13 +15,17 @@ export function fork(priority: number, imageName: string, args: string[] = []){
     return child ? child.pid : false;
 }
 
-export function interrupt(interrupt: number, interruptType?: string){
-    const process = getProcess();
-    if(interruptType === C.INTERRUPT_TYPE.WAKE){
-        process.status = Status.INACTIVE;
-    }
+export function interrupt(interrupt: number){
     const PID = trust();
-    setInterrupt(process, interrupt, interruptType);
+    setInterrupt(getProcess(PID), interrupt, C.INTERRUPT_TYPE.INTERRUPT);
+    setPID(PID);
+}
+
+export function wake(interrupt: number){
+    const process = getProcess();
+    process.status = Status.INACTIVE;
+    const PID = trust();
+    setInterrupt(process, interrupt, C.INTERRUPT_TYPE.WAKE);
     setPID(PID);
 }
 

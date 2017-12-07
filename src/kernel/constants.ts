@@ -1,5 +1,10 @@
 const MEMORY_FORMAT = 'msgpack+lzstring';
 
+enum KERNEL {
+    NAME = 'Eeems\'screeps',
+    VERSION = '0.0.1'
+}
+
 enum SEGMENTS {
     CONFIG = 0,
     KERNEL,
@@ -18,13 +23,14 @@ enum INTERRUPT {
 }
 
 enum INTERRUPT_TYPE {
-    INTERRUPT = 'interrupt',
-    WAKE = 'wake'
+    INTERRUPT = 1,
+    WAKE
 }
 
 export default {
     SEGMENTS,
     INTERRUPT,
     INTERRUPT_TYPE,
-    MEMORY_FORMAT
+    MEMORY_FORMAT,
+    KERNEL
 }

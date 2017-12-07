@@ -10,9 +10,10 @@ export default {
         if(!this.memory){
             this.memory = {};
         }
-        if(!this.memory.creeps){
-            this.memory.creeps = [];
+        const creep = Game.creeps[this.args[0]];
+        if(!this.memory.room){
+            this.memory.room = creep.room.name;
         }
-        // const creep = Game.creeps[this.args[0]];
+        // const room = Game.rooms[this.memory.room.name];
     }
 };

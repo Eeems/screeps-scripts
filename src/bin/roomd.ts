@@ -10,24 +10,15 @@ export default {
         }
     },
     next: function(){
-        if(Game.spawns[this.args[0]]){
+        if(Game.rooms[this.args[0]]){
             if(!this.memory){
                 this.memory = {};
-            }
-            if(!this.memory.creeps){
-                this.memory.creeps = [];
             }
         }else{
             SYSCALL.kill(1);
         }
     },
     interrupt: function(){
-        /*
-        const spawn = Game.spawns[this.args[0]],
-            creeps = this.memory.creeps;
-        if(creeps.length){
-            // todo handle creeps
-        }
-        */
+        // Todo handle room
     }
 };
