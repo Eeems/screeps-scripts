@@ -6,9 +6,9 @@ enum KERNEL {
 }
 
 enum SEGMENTS {
-    CONFIG = 0,
-    KERNEL,
-    INTERRUPT
+    KERNEL = 0,
+    INTERRUPT,
+    DEVICES
 }
 
 enum INTERRUPT {

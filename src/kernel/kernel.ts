@@ -63,6 +63,8 @@ export function setup(){
     memory.setup();
     memory.activate(C.SEGMENTS.KERNEL);
     memory.activate(C.SEGMENTS.INTERRUPT);
+    memory.activate(C.SEGMENTS.DEVICES);
+    memory.deinit();
 }
 export function init(){
     const start = Game.cpu.getUsed();
@@ -166,6 +168,7 @@ export function run(): void{
     }
 }
 export function deinit(){
+    FS.save();
     if(memory.has(C.SEGMENTS.KERNEL)){
         const start = Game.cpu.getUsed();
         saveProcessTable();
@@ -212,7 +215,7 @@ export function startProcess(imageName: string, priority: number, ppid?: number,
     if(!elevated()){
         throw new Error('Insufficient privileges');
     }
-    if(!FS.hasImage(imageName)){
+    if(!FS.has(imageName)){
         throw new Error(`Unable to find image ${imageName}`);
     }
     let pid = 0;

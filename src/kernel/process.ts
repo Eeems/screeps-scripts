@@ -1,6 +1,6 @@
 import { FS } from './fs';
-import {ImageProps} from './image';
 import { getChildProcesses, getProcess, getProcessMemory } from './kernel';
+import {default as Image, ImageProps} from './image';
 
 export enum Priority {
     Immediate = -1,
@@ -42,7 +42,9 @@ export class Process{
     public kill: any;
     public memory: any;
     private _imageName: string;
-    public constructor(pid: number, ppid: number, priority: number, imageName: string, status: Status, args: string[] = []){
+    public constructor(
+        pid: number, ppid: number, priority: number, imageName: string, status: Status, args: string[] = []
+    ){
         this.pid = pid;
         this.ppid = ppid;
         this.priority = priority;
@@ -50,18 +52,18 @@ export class Process{
         this.args = args;
         this.cpu = {
             avg: 0,
-            usage: 0,
+            max: 0,
             runs: 0,
-            max: 0
+            usage: 0
         };
         this._imageName = imageName;
         this.memory = getProcessMemory(pid);
-        const image = FS.getImage(imageName);
+        const image = FS.open(imageName) as Image;
         for(const name of ImageProps){
             if(name in image){
                 this[name] = image[name].bind(this);
             }else{
-                this[name] = () => {};
+                this[name] = () => {/*empty*/};
             }
         }
     }

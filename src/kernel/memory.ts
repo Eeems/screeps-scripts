@@ -131,6 +131,9 @@ export class MemoryBuffer{
 namespace memory{
     export let data: MemoryBuffer = new MemoryBuffer(undefined, C.MEMORY_FORMAT);
     export function setup(): void{
+        init();
+    }
+    export function init(): void{
         const mem = RawMemory.get();
         try{
             data.from(mem);
@@ -144,7 +147,6 @@ namespace memory{
             reset()
         }
     }
-    export function init(): void{}
     export function deinit(): void{
         const memory = data.toString();
         if(memory.length > maxMemory){

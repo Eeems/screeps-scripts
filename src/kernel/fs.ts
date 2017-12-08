@@ -1,22 +1,38 @@
-import {default as Image} from './image';
-
 export namespace FS {
-    const _images: Array<IterableIterator<any>> = [];
+    const _paths: {[name: string]: any} = [];
 
-    export function setImage(name: string, image: Image){
-        _images[name] = image;
-    }
-    export function getImage(name: string): Image{
-        if(!hasImage(name)){
-            throw new Error(`Image ${name} not found`);
+    export function register(name: string, data: any): void{
+        if(has(name)){
+            throw new Error(`Path ${name} already exists`);
         }
-        return _images[name];
+        _paths[name] = data;
     }
-    export function hasImage(name: string): boolean{
-        return name in _images;
+    export function remove(name: string): void{
+        if(!has(name)){
+            throw new Error(`Path ${name} does not exist`);
+        }
+        delete _paths[name];
     }
-    export function images(): string[]{
-        return _.keys(_images);
+    export function has(name: string): boolean{
+        return name in _paths;
+    }
+    export function open(name: string): any{
+        if(!has(name)){
+            throw new Error(`Path ${name} not found`);
+        }
+        return _paths[name];
+    }
+    export function save(name?: string): any{
+        if(name === undefined){
+            _.each(_paths, save);
+        }else if(!has(name)){
+            throw new Error(`Path ${name} not found`);
+        }else{
+            const data = open(name);
+            if(typeof data.save === 'function'){
+                data.save();
+            }
+        }
     }
 }
 
