@@ -17,6 +17,6 @@ export default {
         _.each(stats, (cpu: KernelStats) => {
             console.log(`${_.padLeft(cpu.pid+'', 3)} ${_.padRight(cpu.imageName, longest)} ${_.padLeft(cpu.usage.toFixed(3), 7)} ${_.padLeft(cpu.avg.toFixed(3), 7)} ${cpu.args.join(' ')}`);
         });
-        console.log(`TOTAL: ${total.usage.toFixed(3)} AVERAGE: ${total.avg.toFixed(3)} MAX: ${total.max.toFixed(3)} TICK: ${total.runs}`);
+        console.log(`TOTAL: ${total.usage.toFixed(3)} AVERAGE: ${total.avg.toFixed(3)} MAX: ${total.max.toFixed(3)}`);
     }
 };

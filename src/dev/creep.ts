@@ -12,6 +12,7 @@ export class CreepDevice{
     private _me;
     private _id: string;
     private _memory: any;
+    private _host: any;
     constructor(id: string){
         this._id = id;
         this._me = Game.getObjectById(id);
@@ -37,7 +38,7 @@ export class CreepDevice{
         return this.me.pos;
     }
     get room(){
-        return FS.open(`/dev/room/${this.me.room.name}`);
+        return FS.open('/dev/room').open(this.me.room.name);
     }
     get saying(){
         return this.me.saying;
@@ -79,13 +80,21 @@ export class CreepDevice{
         return ((this.hits / this.hitsMax) * 100).toFixed();
     }
     get host(){
-        return this.memory.host;
+        if(!this._host){
+            let id = this.memory.host;
+            this._host = Game.getObjectById(id) || Game.rooms[id];
+            if(!this._host && id.includes('.')){
+                id = id.split('.');
+                this._host = (Game.getObjectById(id[0]) as {room: Room}).room.getPositionAt(id[1], id[2]);
+            }
+        }
+        return this._host;
     }
     set host(host){
-        this.memory.host = host;
+        this.memory.host = host.id;
     }
     get role(){
-        return this.memory.host;
+        return this.memory.role;
     }
     set role(role){
         this.memory.role = role;

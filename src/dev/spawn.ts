@@ -1,11 +1,19 @@
 import C from '../kernel/constants';
 import { FS } from '../kernel/fs';
 import { default as memory } from '../kernel/memory';
+import {default as Role} from '../kernel/role';
 
 const spawns = {};
 
 function uid(){
     return Math.random().toString(36).substring(7);
+}
+
+function transformQueueItem(item){
+    return {
+        host: item.host,
+        role: FS.open('/dev/role').open(item.role)
+    };
 }
 
 export class SpawnDevice{
@@ -30,7 +38,7 @@ export class SpawnDevice{
         return this.me.pos;
     }
     get room(){
-        return FS.open(`/dev/room/${this.me.room.name}`);
+        return FS.open('/dev/room').open(this.me.room.name);
     }
     get energy(){
         return this.me.energy;
@@ -61,12 +69,10 @@ export class SpawnDevice{
             }
             this._queue = dmem.spawnQueue[this.id] || [];
         }
-        return this._queue.map((item) => {
-            return {
-                host: FS.open(`/dev/source/${item.host}`),
-                role: item.role
-            };
-        });
+        return this._queue.map(transformQueueItem);
+    }
+    get queued(){
+        return this._queue  && this._queue.length;
     }
     public add(role: string, host: any): void{
         this._queue.push({
@@ -74,7 +80,13 @@ export class SpawnDevice{
             role
         });
     }
-    public spawn(role: any, host: any): string{
+    public spawnNext(){
+        if(!this.spawning && this.queued){
+            const item = transformQueueItem(this._queue.pop());
+            return this.spawn(item.role, item.host);
+        }
+    }
+    public spawn(role: Role, host: any): string{
         let name;
         do{
             name = `${role}_${uid()}`;
@@ -82,7 +94,7 @@ export class SpawnDevice{
         if(this.me.spawnCreep(role.body, name, {
             energyStructures: this.room.energyStructures
         }) === OK){
-            const creep = FS.open(`/dev/creep/${Game.creeps[name].id}`);
+            const creep = FS.open('/dev/creep').open(Game.creeps[name].id);
             creep.role = role.name;
             creep.host = host.id;
             return creep.id;

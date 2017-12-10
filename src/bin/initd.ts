@@ -1,5 +1,5 @@
-import {Priority, Process} from '../kernel/process';
 import C from '../kernel/constants';
+import {Priority, Process} from '../kernel/process';
 import * as SYSCALL from '../kernel/syscall';
 
 function ensureProcess(priority: Priority, imageName: string, args: string[] = []): void{
@@ -11,22 +11,20 @@ function ensureProcess(priority: Priority, imageName: string, args: string[] = [
     }
 }
 
+function interrupt(): void{
+    const ensure = ensureProcess.bind(this);
+    ensure(Priority.Always, '/bin/profiled');
+    _.each(_.keys(Game.rooms), (room) => ensure(Priority.Always, '/bin/roomd', [room]));
+    _.each(_.keys(Game.creeps), (creep) => ensure(Priority.AlwaysLast, '/bin/creep', [creep]));
+}
+
 export default {
-    setup: function(): void{
+    interrupt,
+    kill: (): never => {
+        throw Error('PID 0 should never be killed!');
+    },
+    setup: (): void => {
         SYSCALL.interrupt(C.INTERRUPT.TICKSTART);
         SYSCALL.interrupt(C.INTERRUPT.PROCKILL);
-    },
-    interrupt: function(): void{
-        const ensure = ensureProcess.bind(this);
-        ensure(Priority.Always, '/bin/profiled');
-        _.each(_.keys(Game.rooms), (room) => {
-            ensure(Priority.Always, '/bin/roomd', [room]);
-        });
-        _.each(_.keys(Game.creeps), (creep) => {
-            ensure(Priority.AlwaysLast, '/bin/creep', [creep]);
-        });
-    },
-    kill: function(): never{
-        throw Error('PID 0 should never be killed!');
     }
 };

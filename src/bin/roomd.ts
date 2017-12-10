@@ -1,27 +1,5 @@
+import {FS} from '../kernel/fs';
 import * as SYSCALL from '../kernel/syscall';
-
-function getSpaces(spawn, smem, mem){
-    smem.spaces = [];
-    const spawnY = spawn.pos.y,
-        spawnX = spawn.pos.x;
-    _.each(
-        spawn.room.lookAtArea(spawnY - 1, spawnX - 1, spawnY + 1, spawnX + 1, false),
-        (items, y) => {
-            _.each(items, (subitems, x) => {
-                if(
-                    _.reduce(
-                        subitems,
-                        (passable, item: {type: any}) => passable && !~OBSTACLE_OBJECT_TYPES.indexOf(item.type),
-                        true
-                    )
-                ){
-                    smem.spaces.push([x, y, null]);
-                }
-            });
-        }
-    );
-    mem.required = smem.spaces.length;
-}
 
 function setup(){
     if(!this.args[0]){
@@ -29,45 +7,17 @@ function setup(){
     }
 }
 
-function next(){
-    const room = Game.rooms[this.args[0]];
-    if(!room){
-        SYSCALL.kill(1);
+function run(){
+    const room = FS.open('/dev/room').open(this.args[0]);
+    if(room){
+        // room.sources.forEach((source) => );
+        room.spawns.forEach((spawn) => spawn.spawnNext());
     }else{
-        if(!this.memory){
-            this.memory = {
-                required: 0
-            };
-        }
-        const mem = this.memory;
-        if(!mem.sources){
-            mem.sources = room.find(FIND_SOURCES).map((source: {id: string}) => {
-                return {id: source.id};
-            });
-        }
-        if(!mem.spawns){
-            mem.spawns = room.find(FIND_MY_SPAWNS).map((spawn: {id: string}) => spawn.id);
-        }
-        if(!mem.creeps){
-            mem.creeps = room.find(FIND_MY_CREEPS).map((creep: {id: string}) => creep.id);
-        }
-        const sources = mem.sources.map((item) => {
-                const source = Game.getObjectById(item.id);
-                if(!item.spaces){
-                    getSpaces(source, item, mem);
-                }
-                return source;
-            }),
-            creeps = mem.creeps.map((id) => Game.getObjectById(id));
-        if(mem.required){
-            // const spawns = mem.spawns.map((id) => Game.getObjectById(id));
-        }
-        sources;
-        creeps;
+        SYSCALL.kill(1);
     }
 }
 
 export default {
-    next,
+    run,
     setup
 };

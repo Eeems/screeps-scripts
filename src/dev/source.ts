@@ -5,6 +5,7 @@ const sources = {};
 export class SourceDevice{
     private _me;
     private _id: string;
+    private _spaces;
     constructor(id: string){
         this._id = id;
         this._me = Game.getObjectById(id);
@@ -32,17 +33,35 @@ export class SourceDevice{
         return ((this.energy / this.energyCapacity) * 100).toFixed();
     }
     get room(){
-        return FS.open(`/dev/room/${this.me.room.name}`);
+        return FS.open('/dev/room').open(this.me.room.name);
     }
     get safe(){
         return !this.pos.findInRange(FIND_HOSTILE_CREEPS, 10).length;
     }
-    // get spawning(){
-    //     return this.spawns.reduce((spawning, spawn) => {
-    //         // todo get from spawns
-    //         return spawning;
-    //     }, []);
-    // }
+    get spawning(){
+        return this.room.spawns.reduce((spawning, spawn) => {
+            if(spawn.queue.filter((item) => item.host.id === this.id).length){
+                spawning.push(spawn);
+            }
+            return spawning;
+        }, []);
+    }
+    get spaces(){
+        if(!this._spaces){
+            this._spaces = [];
+            _.each(this.room.me.lookAtArea(this.pos.y - 1, this.pos.x - 1, this.pos.y + 1, this.pos.x + 1), (items, y) => {
+                _.each(items, (subitems, x) => {
+                    if(_.reduce(subitems, (passable, item: {type: string}) => passable && !~OBSTACLE_OBJECT_TYPES.indexOf(item.type), true)){
+                        this._spaces.push({
+                            id: `${this.id}.${x}.${y}`,
+                            x, y
+                        });
+                    }
+                });
+            });
+        }
+        return this._spaces.forEach((space) => this.room.me.getPositionAt(space.x, space.y));
+    }
 }
 
 function has(id): boolean{
