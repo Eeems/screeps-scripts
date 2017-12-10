@@ -4,9 +4,9 @@ import { default as memory } from '../kernel/memory';
 
 const spawns = {};
 
-// function uid(){
-//     return Math.random().toString(36).substring(7);
-// }
+function uid(){
+    return Math.random().toString(36).substring(7);
+}
 
 export class SpawnDevice{
     private _me;
@@ -68,11 +68,25 @@ export class SpawnDevice{
             };
         });
     }
-    public add(role: string, host: any){
+    public add(role: string, host: any): void{
         this._queue.push({
             host: host.id,
             role
         });
+    }
+    public spawn(role: any, host: any): string{
+        let name;
+        do{
+            name = `${role}_${uid()}`;
+        }while(Game.creeps[name]);
+        if(this.me.spawnCreep(role.body, name, {
+            energyStructures: this.room.energyStructures
+        }) === OK){
+            const creep = FS.open(`/dev/creep/${Game.creeps[name].id}`);
+            creep.role = role.name;
+            creep.host = host.id;
+            return creep.id;
+        }
     }
     public save(){
         const dmem = memory.get(C.SEGMENTS.DEVICES);
