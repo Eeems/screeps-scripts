@@ -36,9 +36,11 @@ function wake(interrupt: number, interrupt_type: number){
     }
 }
 function kill(e?: any){
-    const creep = Game.creeps[this.args[0]];
+    const creep = Game.creeps[this.args[0]],
+        device = FS.open('/dev/creep');
     if(creep){
-        FS.open('/dev/creep').open(creep.id).kill();
+        device.open(creep.id).kill();
+        device.remove(creep.id);
     }
 }
 

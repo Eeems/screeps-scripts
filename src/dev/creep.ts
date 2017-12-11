@@ -2,39 +2,53 @@ import {default as C} from '../kernel/constants';
 import { FS } from '../kernel/fs';
 import { default as memory } from '../kernel/memory';
 import {default as Role} from '../kernel/role';
+import {default as RoomDevice} from '../dev/room';
 
 const creeps = {};
 
 export class CreepDevice{
-    private _me;
+    private _time: number;
     private _id: string;
+    private _name: string;
     private _memory: any;
     private _host: any;
     private _target: any;
     private _hostPos: any;
     constructor(id: string){
         this._id = id;
-        this._me = Game.getObjectById(id);
-        const dmem = memory.get(C.SEGMENTS.DEVICES);
-        if(!dmem.creeps){
-            dmem.creeps = {};
-        }
-        if(!dmem.creeps[this.name]){
-            dmem.creeps[this.name] = {};
-        }
-        this._memory = dmem.creeps[this.name];
+        this.uncache();
         creeps[id] = this;
     }
-    get id(){
+    private uncache(){
+        if(this._time !== Game.time){
+            this._time = Game.time;
+            if(!this._name){
+                this._name = this.name;
+            }
+            const dmem = memory.get(C.SEGMENTS.DEVICES);
+            if(!dmem.creeps){
+                dmem.creeps = {};
+            }
+            if(!dmem.creeps[this.name]){
+                dmem.creeps[this.name] = {};
+            }
+            this._memory = dmem.creeps[this.name];
+            delete this._host;
+            delete this._target;
+            delete this._hostPos;
+        }
+    }
+    get id(): string{
         return this._id;
     }
-    get name(){
-        return this.me.name;
+    get name(): string{
+        const me = this.me;
+        return me ? me.name : this._name;
     }
-    get me(){
-        return this._me;
+    get me(): Creep{
+        return Game.getObjectById(this.id) as Creep;
     }
-    get pos(){
+    get pos(): RoomPosition{
         return this.me.pos;
     }
     get room(){
@@ -80,6 +94,7 @@ export class CreepDevice{
         return ((this.hits / this.hitsMax) * 100).toFixed();
     }
     get target(){
+        this.uncache();
         if(!this._target){
             if(!this.memory.target){
                 this.memory.target = this.host.id;
@@ -89,10 +104,16 @@ export class CreepDevice{
         return this._target;
     }
     set target(obj){
-        this.memory.target = obj.id || obj.name;
-        delete this._target;
+        if(obj){
+            this.memory.target = obj.id || obj.name;
+            this._target = obj;
+        }else{
+            delete this.memory.target;
+            delete this._target;
+        }
     }
     get host(){
+        this.uncache();
         if(!this._host){
             let id = this.memory.host;
             if(id){
@@ -109,6 +130,7 @@ export class CreepDevice{
         delete this._host;
     }
     get hostPos(){
+        this.uncache();
         if(!this._hostPos){
             let id = this.memory.host;
             if(id.includes('.')){
@@ -185,43 +207,63 @@ export class CreepDevice{
             }
         }
     }
-    public getPathTo(target){
-        const res = PathFinder.search(this.pos, target.pos || target, {
-            roomCallback: (name) => {
-                const room = Game.rooms[name];
-                if(room){
-                    let costs = new PathFinder.CostMatrix;
-                    room.find(FIND_STRUCTURES).forEach((s: any) => {
-                        if(s.structureType === STRUCTURE_ROAD){
-                            costs.set(s.pos.x, s.pos.y, 1);
-                        }else if(!~[STRUCTURE_CONTAINER, STRUCTURE_RAMPART].indexOf(s.structureType) || !s.my){
-                            costs.set(s.pos.x, s.pos.y, 0xff);
-                        }
-                    });
-                    room.find(FIND_HOSTILE_CREEPS).forEach((c: Creep) => costs.set(c.pos.x, c.pos.y, 0xff));
-                    return costs;
-                }
-            }
+    public getPathTo(target, range: number = 0, creep: boolean = false){
+        const res = PathFinder.search(this.pos, {
+            pos: target.pos || target,
+            range
+        }, {
+            roomCallback: (name) => RoomDevice.costMatrix(name, creep)
         });
         if(res.incomplete){
-            console.log(`WARNING: Incomplete path to ${target}`);
-            console.log(JSON.stringify(res.path));
+            if(range === 0){
+                return this.getPathTo(target, 1);
+            }else{
+                console.log(`WARNING: Incomplete path to ${target}`);
+                return [];
+            }
         }
         return res.path;
+    }
+    get nextPos(): RoomPosition{
+        if(this.path && this.path.length){
+            const pos = this.memory.path.shift();
+            return new RoomPosition(~~pos.x, ~~pos.y, pos.roomName);
+        }
     }
     public travelTo(target): number{
         if(this.target !== target){
             this.target = target;
             this.path = this.getPathTo(target);
         }
-        const path = this.path;
-        if(path.length){
-            const pos = path.shift(),
-                code = this.me.move(this.pos.getDirectionTo(pos));
-            this.path = path;
-            return code;
+        let pos = this.nextPos;
+        if(!pos || !pos.isNearTo(this.pos)){
+            this.path = this.getPathTo(target);
+            pos = this.nextPos;
         }
-        return OK;
+        if(!pos){
+            return ERR_NO_PATH;
+        }
+        const res = _.first(pos.look().filter((item) => item.type === 'creep'));
+        if(res){
+            const creep = FS.open('/dev/creep').open(res.creep.id);
+            if(!creep.path.length){
+                this.path = this.getPathTo(target, 0, true);
+                const nextPos = this.nextPos;
+                if(!nextPos || (nextPos.x === pos.x && nextPos.y === pos.y && nextPos.roomName === pos.roomName)){
+                    return ERR_NO_PATH;
+                }else{
+                    pos = nextPos
+                }
+            }
+        }
+        return this.me.moveTo(pos, {
+            reusePath: 0,
+            serializeMemory: false,
+            visualizePathStyle: {}
+        });
+    }
+    public isAt(pos: RoomPosition): boolean{
+        return this.pos.roomName === pos.roomName && this.pos.x === pos.x && this.pos.y === pos.y;
     }
 }
 
@@ -250,10 +292,13 @@ export default {
     remove: (id): void => {
         FS.remove(`/dev/creep/${id}`);
         delete creeps[id];
+        delete memory.get(C.SEGMENTS.DEVICES).creeps[id];
     },
-    save: (id): void => {
+    save: (id?): void => {
         if(!id){
             _.each(creeps, (creep: CreepDevice) => creep.save());
+        }else if(has(id)){
+            creeps[id].save();
         }
     }
 };

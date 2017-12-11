@@ -5,5 +5,5 @@ export default interface Device {
     remove: (id) => void;
     has: (id) => boolean;
     open: (id) => any;
-    save: (id) => void;
+    save: (id?) => void;
 }

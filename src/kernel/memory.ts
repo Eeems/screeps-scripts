@@ -12,10 +12,6 @@ const options = {
     maxMemory = 2 * 1024 * 1024;
     // maxSegmentMemory = 100 * 1024;
 
-interface RawMemoryAPIBreak extends RawMemory {
-    _parsed: any;
-}
-
 function uint8ToStr(uint: Uint8Array): string{
     let str = '';
     for(let i=0, j = uint.length; i<j; ++i){
@@ -152,7 +148,7 @@ namespace memory{
             reset();
         }
         delete global.Memory;
-        global.Memory = (RawMemory as RawMemoryAPIBreak)._parsed = data.toJSON() as Memory;
+        global.Memory = data.toJSON() as Memory;
     }
     export function deinit(): void{
         const mem = data.toString();

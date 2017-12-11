@@ -1,4 +1,5 @@
 import { FS } from '../kernel/fs';
+import {SpawnDevice} from './spawn';
 
 export interface SourceSpace {
     id: string;
@@ -10,24 +11,27 @@ export interface SourceSpace {
 const sources = {};
 
 export class SourceDevice{
-    private _me;
+    private _time: number;
     private _id: string;
     private _spaces: SourceSpace[];
     constructor(id: string){
         this._id = id;
-        this._me = Game.getObjectById(id);
+        this.uncache();
         sources[id] = this;
     }
-    get me(){
-        return this._me;
+    private uncache(){
+        if(this._time !== Game.time){
+            this._time = Game.time;
+            delete this._spaces;
+        }
+    }
+    get me(): Source{
+        return Game.getObjectById(this.id) as Source;
     }
     get id(){
         return this._id;
     }
-    get name(){
-        return this.me.name;
-    }
-    get pos(){
+    get pos(): RoomPosition{
         return this.me.pos;
     }
     get energy(){
@@ -48,19 +52,20 @@ export class SourceDevice{
     get spawning(){
         return this.room.spawns.reduce((spawning, spawn) => {
             spawn.queue
-                .filter((item) => item.host === this.id)
+                .filter((item) => item.host.split('.')[0] === this.id)
                 .forEach((item) => spawning.push(item));
             return spawning;
         }, []);
     }
     get spaces(): SourceSpace[]{
+        this.uncache();
         if(this._spaces === undefined){
             this._spaces = [];
             _.each(
                 this.room.me.lookAtArea(this.pos.y - 1, this.pos.x - 1, this.pos.y + 1, this.pos.x + 1),
                 (items, y) => {
                     _.each(items, (subitems, x) => {
-                        if(_.reduce(
+                        if((this.pos.x !== ~~x || this.pos.y != ~~y) && _.reduce(
                             subitems,
                             (passable, item: {type: string, terrain?: string, structure?: Structure}) => {
                                 if(passable){
@@ -94,20 +99,20 @@ export class SourceDevice{
         const hosts = _.union(
             this.room
                 .creeps
-                .filter((creep) => creep.host)
-                .map((creep) => creep.host.id),
+                .filter((creep) => creep.hostPos)
+                .map((creep) => creep.memory.host),
             this.spawning.map((item) => item.host)
         );
         return this.spaces.filter((space) => !~hosts.indexOf(space.id));
     }
     public ensureHarvesters(){
         if(this.freeSpaces.length){
-            const spawns = this.room.spawns.filter((spawn) => !spawn.spawning);
-            if(spawns.length){
-                _.take(this.freeSpaces, spawns.length).forEach((space, i) => {
-                    spawns[i].add('harvester', space);
-                });
-            }
+            this.freeSpaces.forEach((space, i) => {
+                const spawn = _.min(this.room.spawns, (spawn) => this.pos.getRangeTo(spawn.pos)) as SpawnDevice;
+                if(spawn && spawn.add){
+                    spawn.add('harvester', space);
+                }
+            });
         }
     }
 }
@@ -138,5 +143,5 @@ export default {
         FS.remove(`/dev/source/${id}`);
         delete sources[id];
     },
-    save: (id): void => {id;/*empty*/}
+    save: (id?): void => {id;/*empty*/}
 };

@@ -14,3 +14,10 @@ export function setup(){
         FS.register(`/role/${name}`, device);
     });
 }
+export function deinit(){
+    _.each(dev, (device, name) => {
+        if(device.save){
+            device.save();
+        }
+    });
+}

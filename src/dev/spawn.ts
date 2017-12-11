@@ -17,24 +17,30 @@ function transformQueueItem(item){
 }
 
 export class SpawnDevice{
-    private _me;
+    private _time: number;
     private _id: string;
     private _queue: any[];
     constructor(id: string){
         this._id = id;
-        this._me = Game.getObjectById(id);
+        this.uncache();
         spawns[id] = this;
     }
-    get id(){
+    private uncache(){
+        if(this._time !== Game.time){
+            this._time = Game.time;
+            delete this._queue;
+        }
+    }
+    get id(): string{
         return this._id;
     }
-    get name(){
+    get name(): string{
         return this.me.name;
     }
-    get me(){
-        return this._me;
+    get me(): StructureSpawn{
+        return Game.getObjectById(this.id) as StructureSpawn;
     }
-    get pos(){
+    get pos(): RoomPosition{
         return this.me.pos;
     }
     get room(){
@@ -62,7 +68,8 @@ export class SpawnDevice{
         return this.me.spawning;
     }
     get queue(){
-        if(!this._queue && memory.has(C.SEGMENTS.DEVICES)){
+        this.uncache();
+        if(this._queue === undefined && memory.has(C.SEGMENTS.DEVICES)){
             const dmem = memory.get(C.SEGMENTS.DEVICES);
             if(!dmem.spawnQueue){
                 dmem.spawnQueue = {};
@@ -71,8 +78,8 @@ export class SpawnDevice{
         }
         return this._queue.map(transformQueueItem);
     }
-    get queued(){
-        return this._queue  && !!this._queue.length;
+    get queued(): boolean{
+        return this.queue  && !!this.queue.length;
     }
     public add(role: string, host: any): void{
         this._queue.push({
@@ -146,7 +153,7 @@ export default {
         FS.remove(`/dev/spawn/${id}`);
         delete spawns[id];
     },
-    save: (id): void => {
+    save: (id?): void => {
         if(!id){
             _.each(spawns, (spawn: SpawnDevice) => spawn.save());
         }

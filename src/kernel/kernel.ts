@@ -1,6 +1,7 @@
 import C from './constants';
 import { FS } from './fs';
 import { default as memory } from './memory';
+import * as mkfs from '../mkfs';
 import { Priority, Process, Status, ProcessStats } from './process';
 
 let processes: {[pid: number]: Process},
@@ -64,6 +65,7 @@ export function setup(){
     memory.activate(C.SEGMENTS.KERNEL);
     memory.activate(C.SEGMENTS.INTERRUPT);
     memory.activate(C.SEGMENTS.DEVICES);
+    mkfs.setup();
     memory.deinit();
 }
 export function init(){
@@ -180,6 +182,7 @@ export function deinit(){
     }
     record();
     runInterrupt(C.INTERRUPT.DEINIT);
+    mkfs.deinit();
     memory.deinit();
 }
 export function record(usage?: number){
