@@ -10,7 +10,7 @@ function setup(){
 function run(){
     const room = FS.open('/dev/room').open(this.args[0]);
     if(room){
-        // room.sources.forEach((source) => );
+        room.sources.forEach((source) => source.ensureHarvesters());
         room.spawns.forEach((spawn) => spawn.spawnNext());
     }else{
         SYSCALL.kill(1);

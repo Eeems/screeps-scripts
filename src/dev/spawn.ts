@@ -12,7 +12,7 @@ function uid(){
 function transformQueueItem(item){
     return {
         host: item.host,
-        role: FS.open('/dev/role').open(item.role)
+        role: FS.open(`/role/${item.role}`)
     };
 }
 
@@ -26,10 +26,10 @@ export class SpawnDevice{
         spawns[id] = this;
     }
     get id(){
-        return this.name;
+        return this._id;
     }
     get name(){
-        return this._id;
+        return this.me.name;
     }
     get me(){
         return this._me;
@@ -72,7 +72,7 @@ export class SpawnDevice{
         return this._queue.map(transformQueueItem);
     }
     get queued(){
-        return this._queue  && this._queue.length;
+        return this._queue  && !!this._queue.length;
     }
     public add(role: string, host: any): void{
         this._queue.push({
@@ -83,22 +83,33 @@ export class SpawnDevice{
     public spawnNext(){
         if(!this.spawning && this.queued){
             const item = transformQueueItem(this._queue.pop());
-            return this.spawn(item.role, item.host);
+            if(this.energy >= this.spawnCost(item.role)){
+                return this.spawn(item.role, item.host);
+            }
         }
     }
-    public spawn(role: Role, host: any): string{
+    public spawn(role: Role, host: string): number{
         let name;
         do{
-            name = `${role}_${uid()}`;
+            name = `${role.name}_${uid()}`;
         }while(Game.creeps[name]);
-        if(this.me.spawnCreep(role.body, name, {
-            energyStructures: this.room.energyStructures
-        }) === OK){
-            const creep = FS.open('/dev/creep').open(Game.creeps[name].id);
-            creep.role = role.name;
-            creep.host = host.id;
-            return creep.id;
+        const code = this.me.spawnCreep(role.body(), name, {
+                energyStructures: this.room.energyStructures
+            });
+        if(code === OK){
+            const dmem = memory.get(C.SEGMENTS.DEVICES);
+            if(!dmem.creeps){
+                dmem.creeps = {};
+            }
+            dmem.creeps[name] = {
+                role: role.name,
+                host: host
+            };
         }
+        return code;
+    }
+    public spawnCost(role: Role){
+        return Math.max(_.reduce(role.body(), (n, part) => n + BODYPART_COST[part], 0), 300);
     }
     public save(){
         const dmem = memory.get(C.SEGMENTS.DEVICES);

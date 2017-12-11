@@ -1,5 +1,5 @@
-import {createCodec, decode, encode} from 'msgpack-lite';
 import * as lzstring from 'lz-string';
+import {createCodec, decode, encode} from 'msgpack-lite';
 import C from '../kernel/constants';
 
 const options = {
@@ -11,6 +11,10 @@ const options = {
     },
     maxMemory = 2 * 1024 * 1024;
     // maxSegmentMemory = 100 * 1024;
+
+interface RawMemoryAPIBreak extends RawMemory {
+    _parsed: any;
+}
 
 function uint8ToStr(uint: Uint8Array): string{
     let str = '';
@@ -28,34 +32,35 @@ function strToUint8(str: string): Uint8Array{
 }
 
 export class MemoryBuffer{
-    private _data: any;
-    private _serializer: string;
-    private _compression: string;
-    static serializers = {
+    public static serializers = {
         json: {
-            encode: JSON.stringify.bind(JSON),
-            decode: JSON.parse.bind(JSON)
+            decode: JSON.parse.bind(JSON),
+            encode: JSON.stringify.bind(JSON)
         },
         msgpack: {
-            encode: (data) => uint8ToStr(encode(data, options)),
-            decode: (data) => decode(strToUint8(data), options)
+            decode: (data) => decode(strToUint8(data), options),
+            encode: (data) => uint8ToStr(encode(data, options))
         }
     };
-    static compression = {
-        none: {
-            compress: (data) => data,
-            decompress: (data) => data
-        },
+    public static compression = {
         lzstring: {
             compress: (data) => lzstring.compressToUTF16(data),
             decompress: (data) => lzstring.decompressFromUTF16(data)
+        },
+        none: {
+            compress: (data) => data,
+            decompress: (data) => data
         }
     };
+    private _data: any;
+    private _serializer: string;
+    private _compression: string;
     public constructor(data?: string, format: string = 'json'){
-        let [serializer, compression] = format.split('+');
+        const serializer = format.split('+')[0];
+        let compression = format.split('+')[1];
         compression = compression || 'none';
         if(!MemoryBuffer.serializers[serializer]){
-            throw new Error('Invalid serializer')
+            throw new Error('Invalid serializer');
         }
         if(!MemoryBuffer.compression[compression]){
             throw new Error('Invalid compression');
@@ -87,8 +92,8 @@ export class MemoryBuffer{
             throw new Error(`Unable to set memory ${key}\n${e}`);
         }
     }
-    public remove(key: string | number): void{
-        delete this._data[key];
+    public remove(key: string | number): boolean{
+        return delete this._data[key];
     }
     public defaults(data: any): void{
         this._data = _.defaults(this._data, data);
@@ -100,7 +105,7 @@ export class MemoryBuffer{
         const serializerFns = MemoryBuffer.serializers[this._serializer],
             compressionFns = MemoryBuffer.compression[this._compression];
         if(!serializerFns){
-            throw new Error('Invalid serializer')
+            throw new Error('Invalid serializer');
         }
         if(!compressionFns){
             throw new Error('Invalid compression');
@@ -144,21 +149,25 @@ namespace memory{
         }catch(e){
             console.log(`ERROR: Could not read memory.\n${e}`);
             console.log(mem);
-            reset()
+            reset();
         }
+        delete global.Memory;
+        global.Memory = (RawMemory as RawMemoryAPIBreak)._parsed = data.toJSON() as Memory;
     }
     export function deinit(): void{
-        const memory = data.toString();
-        if(memory.length > maxMemory){
+        const mem = data.toString();
+        if(mem.length > maxMemory){
             throw new Error('Memory filled');
         }
-        RawMemory.set(memory);
+        RawMemory.set(mem);
     }
     export function activate(key: string | number): void{
         load(key);
     }
     export function load(key: string | number): any{
-        !has(key) && set(key, {});
+        if(!has(key)){
+            set(key, {});
+        }
         return get(key);
     }
     export function get(key: string | number): any{

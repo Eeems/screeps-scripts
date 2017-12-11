@@ -10,6 +10,7 @@ declare namespace NodeJS {
         FS: any;
         C: any;
         memory: any;
+        Memory: Memory
     }
 }
 

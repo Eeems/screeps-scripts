@@ -1,35 +1,35 @@
-import C from '../kernel/constants';
+import {default as C} from '../kernel/constants';
 import { FS } from '../kernel/fs';
 import { default as memory } from '../kernel/memory';
+import {default as Role} from '../kernel/role';
 
 const creeps = {};
-
-// function uid(){
-//     return Math.random().toString(36).substring(7);
-// }
 
 export class CreepDevice{
     private _me;
     private _id: string;
     private _memory: any;
     private _host: any;
+    private _target: any;
+    private _hostPos: any;
     constructor(id: string){
         this._id = id;
         this._me = Game.getObjectById(id);
         const dmem = memory.get(C.SEGMENTS.DEVICES);
-        if(!dmem.creep){
-            dmem.creep = {};
+        if(!dmem.creeps){
+            dmem.creeps = {};
         }
-        if(!dmem.creep[this.id]){
-            dmem.creep[this.id] = {};
+        if(!dmem.creeps[this.name]){
+            dmem.creeps[this.name] = {};
         }
+        this._memory = dmem.creeps[this.name];
         creeps[id] = this;
     }
     get id(){
-        return this.name;
+        return this._id;
     }
     get name(){
-        return this._id;
+        return this.me.name;
     }
     get me(){
         return this._me;
@@ -79,35 +79,149 @@ export class CreepDevice{
     get hitsPercent(){
         return ((this.hits / this.hitsMax) * 100).toFixed();
     }
+    get target(){
+        if(!this._target){
+            if(!this.memory.target){
+                this.memory.target = this.host.id;
+            }
+            this._target = Game.getObjectById(this.memory.target) || Game.rooms[this.memory.target];
+        }
+        return this._target;
+    }
+    set target(obj){
+        this.memory.target = obj.id || obj.name;
+        delete this._target;
+    }
     get host(){
         if(!this._host){
             let id = this.memory.host;
-            this._host = Game.getObjectById(id) || Game.rooms[id];
-            if(!this._host && id.includes('.')){
-                id = id.split('.');
-                this._host = (Game.getObjectById(id[0]) as {room: Room}).room.getPositionAt(id[1], id[2]);
+            if(id){
+                this._host = Game.getObjectById(id) || Game.rooms[id];
+                if(!this._host && id.includes('.')){
+                    this._host = Game.getObjectById(id.split('.')[0]);
+                }
             }
         }
         return this._host;
     }
     set host(host){
         this.memory.host = host.id;
+        delete this._host;
+    }
+    get hostPos(){
+        if(!this._hostPos){
+            let id = this.memory.host;
+            if(id.includes('.')){
+                id = id.split('.');
+                this._hostPos = this.host.room.getPositionAt(id[1], id[2]);
+            }else{
+                this._hostPos = this.host.pos;
+            }
+        }
+        return this._hostPos;
+    }
+    get path(){
+        return this.memory.path;
+    }
+    set path(newPath){
+        this.memory.path = newPath;
     }
     get role(){
-        return this.memory.role;
+        if(!this.memory.role){
+            this.memory.role = this.name.split('_')[0];
+        }
+        return FS.open(`/role/${this.memory.role}`);
     }
-    set role(role){
-        this.memory.role = role;
+    set role(role: Role){
+        this.memory.role = role.name;
     }
     get memory(){
         return this._memory;
     }
     public save(){
         const dmem = memory.get(C.SEGMENTS.DEVICES);
-        if(!dmem.creep){
-            dmem.creep = {};
+        if(!dmem.creeps){
+            dmem.creeps = {};
         }
-        dmem.creep[this.id] = this.memory;
+        dmem.creeps[this.name] = this.memory;
+    }
+    public run(){
+        if(!this.spawning){
+            const role = this.role;
+            if(role.run){
+                role.run(this);
+            }
+        }
+    }
+    public setup(){
+        if(!this.spawning){
+            const role = this.role;
+            if(role.setup){
+                role.setup(this);
+            }
+        }
+    }
+    public interrupt(interrupt: number, interrupt_type: number, signal?: any){
+        if(!this.spawning){
+            const role = this.role;
+            if(role.interrupt){
+                role.interrupt(this, interrupt, interrupt_type, signal);
+            }
+        }
+    }
+    public wake(interrupt: number, interrupt_type: number){
+        if(!this.spawning){
+            const role = this.role;
+            if(role.wake){
+                role.wake(this, interrupt, interrupt_type);
+            }
+        }
+    }
+    public kill(e?: any){
+        if(!this.spawning){
+            const role = this.role;
+            if(role.kill){
+                role.kill(this, e);
+            }
+        }
+    }
+    public getPathTo(target){
+        const res = PathFinder.search(this.pos, target.pos || target, {
+            roomCallback: (name) => {
+                const room = Game.rooms[name];
+                if(room){
+                    let costs = new PathFinder.CostMatrix;
+                    room.find(FIND_STRUCTURES).forEach((s: any) => {
+                        if(s.structureType === STRUCTURE_ROAD){
+                            costs.set(s.pos.x, s.pos.y, 1);
+                        }else if(!~[STRUCTURE_CONTAINER, STRUCTURE_RAMPART].indexOf(s.structureType) || !s.my){
+                            costs.set(s.pos.x, s.pos.y, 0xff);
+                        }
+                    });
+                    room.find(FIND_HOSTILE_CREEPS).forEach((c: Creep) => costs.set(c.pos.x, c.pos.y, 0xff));
+                    return costs;
+                }
+            }
+        });
+        if(res.incomplete){
+            console.log(`WARNING: Incomplete path to ${target}`);
+            console.log(JSON.stringify(res.path));
+        }
+        return res.path;
+    }
+    public travelTo(target): number{
+        if(this.target !== target){
+            this.target = target;
+            this.path = this.getPathTo(target);
+        }
+        const path = this.path;
+        if(path.length){
+            const pos = path.shift(),
+                code = this.me.move(this.pos.getDirectionTo(pos));
+            this.path = path;
+            return code;
+        }
+        return OK;
     }
 }
 

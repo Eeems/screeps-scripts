@@ -1,7 +1,7 @@
+import C from './constants';
 import { FS } from './fs';
 import { default as memory } from './memory';
 import { Priority, Process, Status, ProcessStats } from './process';
-import C from './constants';
 
 let processes: {[pid: number]: Process},
     interrupts: {
@@ -126,8 +126,8 @@ export function run(): void{
             let process = queue.shift();
             while(process){
                 const start = Game.cpu.getUsed();
+                setPID(process.pid);
                 try{
-                    setPID(process.pid);
                     if(!process.parent){
                         killProcess(process.pid);
                     }
@@ -150,13 +150,14 @@ export function run(): void{
                         default:
                             break;
                     }
-                    setPID(0);
                 }catch(e){
                     console.log(`Process ${process.pid} (${process.imageName}) failed`);
                     console.log(e.message);
                     console.log(e.stack);
+                    setPID(0);
                     killProcess(process.pid);
                 }finally{
+                    setPID(0);
                     const usage = Game.cpu.getUsed() - start;
                     process.record(usage);
                     process = queue.shift();

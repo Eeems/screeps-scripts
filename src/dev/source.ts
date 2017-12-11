@@ -1,11 +1,18 @@
 import { FS } from '../kernel/fs';
 
+export interface SourceSpace {
+    id: string;
+    x: number;
+    y: number;
+    pos?: RoomPosition;
+}
+
 const sources = {};
 
 export class SourceDevice{
     private _me;
     private _id: string;
-    private _spaces;
+    private _spaces: SourceSpace[];
     constructor(id: string){
         this._id = id;
         this._me = Game.getObjectById(id);
@@ -40,27 +47,68 @@ export class SourceDevice{
     }
     get spawning(){
         return this.room.spawns.reduce((spawning, spawn) => {
-            if(spawn.queue.filter((item) => item.host.id === this.id).length){
-                spawning.push(spawn);
-            }
+            spawn.queue
+                .filter((item) => item.host === this.id)
+                .forEach((item) => spawning.push(item));
             return spawning;
         }, []);
     }
-    get spaces(){
-        if(!this._spaces){
+    get spaces(): SourceSpace[]{
+        if(this._spaces === undefined){
             this._spaces = [];
-            _.each(this.room.me.lookAtArea(this.pos.y - 1, this.pos.x - 1, this.pos.y + 1, this.pos.x + 1), (items, y) => {
-                _.each(items, (subitems, x) => {
-                    if(_.reduce(subitems, (passable, item: {type: string}) => passable && !~OBSTACLE_OBJECT_TYPES.indexOf(item.type), true)){
-                        this._spaces.push({
-                            id: `${this.id}.${x}.${y}`,
-                            x, y
-                        });
-                    }
-                });
-            });
+            _.each(
+                this.room.me.lookAtArea(this.pos.y - 1, this.pos.x - 1, this.pos.y + 1, this.pos.x + 1),
+                (items, y) => {
+                    _.each(items, (subitems, x) => {
+                        if(_.reduce(
+                            subitems,
+                            (passable, item: {type: string, terrain?: string, structure?: Structure}) => {
+                                if(passable){
+                                    if(item.type === 'terrain'){
+                                        passable = item.terrain !== 'wall';
+                                    }else if(item.type === 'structure'){
+                                        passable = !~OBSTACLE_OBJECT_TYPES.indexOf(item.structure.structureType);
+                                    }else{
+                                        passable = item.type !== 'creep';
+                                    }
+                                }
+                                return passable;
+                            },
+                            true
+                        )){
+                            this._spaces.push({
+                                id: `${this.id}.${x}.${y}`,
+                                x: ~~x,
+                                y: ~~y
+                            });
+                        }
+                    });
+                }
+            );
         }
-        return this._spaces.forEach((space) => this.room.me.getPositionAt(space.x, space.y));
+        return this._spaces.map((space) => _.defaults(space, {
+            pos: this.room.me.getPositionAt(space.x, space.y)
+        }));
+    }
+    get freeSpaces(){
+        const hosts = _.union(
+            this.room
+                .creeps
+                .filter((creep) => creep.host)
+                .map((creep) => creep.host.id),
+            this.spawning.map((item) => item.host)
+        );
+        return this.spaces.filter((space) => !~hosts.indexOf(space.id));
+    }
+    public ensureHarvesters(){
+        if(this.freeSpaces.length){
+            const spawns = this.room.spawns.filter((spawn) => !spawn.spawning);
+            if(spawns.length){
+                _.take(this.freeSpaces, spawns.length).forEach((space, i) => {
+                    spawns[i].add('harvester', space);
+                });
+            }
+        }
     }
 }
 

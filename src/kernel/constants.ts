@@ -1,4 +1,4 @@
-const MEMORY_FORMAT = 'msgpack+lzstring';
+const MEMORY_FORMAT = 'json';
 
 enum KERNEL {
     NAME = 'Eeems\'screeps',
@@ -28,9 +28,9 @@ enum INTERRUPT_TYPE {
 }
 
 export default {
-    SEGMENTS,
     INTERRUPT,
     INTERRUPT_TYPE,
+    KERNEL,
     MEMORY_FORMAT,
-    KERNEL
+    SEGMENTS
 }

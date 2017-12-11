@@ -34,6 +34,9 @@ export namespace FS {
             }
         }
     }
+    export function keys(): string[]{
+        return _.keys(_paths);
+    }
 }
 
 export default FS;

@@ -6,7 +6,7 @@
         "noEmitOnError": true,
         "noResolve": false,
         "experimentalDecorators": true,
-        "noUnusedParameters": true,
+        "noUnusedParameters": false,
         "noUnusedLocals": true,
         "sourceMap": true,
         "baseUrl": "./src/"

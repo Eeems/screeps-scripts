@@ -5,9 +5,11 @@ const rooms = {};
 export class RoomDevice{
     private _me;
     private _id: string;
-    private _energyStructures: any[];
-    private _storageStructures: any[];
-    private _spawns: any[];
+    private _energyStructures: string[];
+    private _storageStructures: string[];
+    private _spawns: string[];
+    private _sources: string[];
+    private _creeps: string[];
     constructor(id: string){
         this._id = id;
         this._me = Game.rooms[id];
@@ -73,8 +75,23 @@ export class RoomDevice{
                 .find(FIND_MY_SPAWNS)
                 .map((s) => s.id);
         }
-        const device = FS.open('/dev/spawn');
-        return this._spawns.map((id) => device.open(id));
+        return this._spawns.map(FS.open('/dev/spawn').open);
+    }
+    get sources(){
+        if(this._sources === undefined){
+            this._sources = this.me
+                .find(FIND_SOURCES)
+                .map((s) => s.id);
+        }
+        return this._sources.map(FS.open('/dev/source').open);
+    }
+    get creeps(){
+        if(this._creeps === undefined){
+            this._creeps = this.me
+                .find(FIND_MY_CREEPS)
+                .map((s) => s.id);
+        }
+        return this._creeps.map(FS.open('/dev/creep').open);
     }
 }
 
