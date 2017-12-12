@@ -153,7 +153,7 @@ export function run(): void{
                             break;
                     }
                 }catch(e){
-                    console.log(`Process ${process.pid} (${process.imageName}) failed`);
+                    console.log(`Process ${process.pid} (${process.imageName} ${process.args.join(' ')}) failed`);
                     console.log(e.message);
                     console.log(e.stack);
                     setPID(0);
@@ -235,7 +235,7 @@ export function startProcess(imageName: string, priority: number, ppid?: number,
     try{
         process.setup();
     }catch(e){
-        console.log(`Process ${process.pid} (${process.imageName}) failed`);
+        console.log(`Process ${process.pid} (${process.imageName} ${process.args.join(' ')}) failed`);
         console.log(e.message);
         console.log(e.stack);
         killProcess(process.pid);
@@ -262,7 +262,7 @@ export function killProcess(pid: number, signal?: number): boolean{
         try{
             process.kill(signal);
         }catch(e){
-            console.log(`Process ${process.pid} (${process.imageName}) failed`);
+            console.log(`Process ${process.pid} (${process.imageName} ${process.args.join(' ')}) failed`);
             console.log(e.message);
             console.log(e.stack);
         }finally{
@@ -408,7 +408,7 @@ export function runInterrupt(interrupt: number, signal?: any){
                         process.interrupt.apply(process, args);
                     }
                 }catch(e){
-                    console.log(`Process ${process.pid} (${process.imageName}) failed`);
+                    console.log(`Process ${process.pid} (${process.imageName} ${process.args.join(' ')}) failed`);
                     console.log(e.message);
                     console.log(e.stack);
                     setPID(0);

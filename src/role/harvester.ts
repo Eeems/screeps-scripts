@@ -3,7 +3,8 @@ import {default as C} from '../kernel/constants';
 import {default as Role} from '../kernel/role';
 
 function notFull(structures){
-    return structures.filter((s) => (s.energy || _.sum(s.store)) < (s.energyCapacity || s.storeCapacity));
+    return structures.filter((s) => (s.energy || _.sum(s.store)) < (s.energyCapacity || s.storeCapacity))
+        .map((s) => s.pos);
 }
 
 function getNextTarget(creep){
@@ -14,12 +15,21 @@ function getNextTarget(creep){
     if(targets.length){
         return _.min(
             targets,
-            (s: {pos: RoomPosition}) => creep.pos.getRangeTo(s.pos)
+            (pos: RoomPosition) => creep.pos.getRangeTo(pos)
+        );
+    }
+}
+function spawnAt(pos: RoomPosition){
+    if(pos && pos.look){
+        return _.first(
+            pos.look()
+                .filter((item) => item.type === 'structure' && item.structure.structureType === STRUCTURE_SPAWN)
+                .map((item) => item.structure)
         );
     }
 }
 function depositAtTarget(creep: CreepDevice): number{
-    if(!creep.target || creep.target === creep.host || creep.target === creep.hostPos){
+    if(!creep.target || creep.targetIs(creep.hostPos)){
         creep.target = getNextTarget(creep) || creep.hostPos;
     }
     if(!creep.target){
@@ -28,13 +38,20 @@ function depositAtTarget(creep: CreepDevice): number{
     if(!creep.pos.isNearTo(creep.target)){
         return creep.travelTo(creep.target);
     }
-    const code = creep.me.transfer(creep.target, RESOURCE_ENERGY);
+    const spawn = spawnAt(creep.target);
+    if(!spawn){
+        return ERR_INVALID_TARGET;
+    }
+    const code = creep.me.transfer(spawn, RESOURCE_ENERGY);
     switch(code){
         case ERR_NOT_IN_RANGE:
             return creep.travelTo(creep.target);
         case ERR_FULL:
-            creep.target = getNextTarget(creep);
-            return depositAtTarget(creep);
+            const target = getNextTarget(creep);
+            if(target){
+                creep.target = target;
+            }
+            return target ? depositAtTarget(creep) : creep.travelTo(creep.hostPos);
     }
     return code;
 }

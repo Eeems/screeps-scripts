@@ -152,11 +152,12 @@ export default {
                 room.find(FIND_STRUCTURES).forEach((s: any) => {
                     if(s.structureType === STRUCTURE_ROAD){
                         costs.set(s.pos.x, s.pos.y, 1);
-                    }else if(!~[STRUCTURE_CONTAINER, STRUCTURE_RAMPART].indexOf(s.structureType) || !s.my){
+                    }else if(!~[STRUCTURE_CONTAINER, STRUCTURE_RAMPART, STRUCTURE_ROAD].indexOf(s.structureType) || !s.my){
                         costs.set(s.pos.x, s.pos.y, 0xff);
                     }
                 });
                 room.find(creep ? FIND_CREEPS : FIND_HOSTILE_CREEPS).forEach((c: Creep) => costs.set(c.pos.x, c.pos.y, 0xff));
+                room.find(FIND_SOURCES).forEach((s: Source) => costs.set(s.pos.x, s.pos.y, 0xff));
                 matrix[name] = costs;
                 return costs;
             }

@@ -6,6 +6,10 @@ import {default as RoomDevice} from '../dev/room';
 
 const creeps = {};
 
+function equalPos(pos0: RoomPosition, pos1: RoomPosition): boolean{
+    return pos0 && pos1 && pos0.roomName === pos1.roomName && pos0.x === pos1.x && pos0.y === pos1.y;
+}
+
 export class CreepDevice{
     private _time: number;
     private _id: string;
@@ -96,20 +100,26 @@ export class CreepDevice{
     get target(){
         this.uncache();
         if(!this._target){
-            if(!this.memory.target){
-                this.memory.target = this.host.id;
+            if(!this.memory.target || typeof this.memory.target !== 'object'){
+                this.memory.target = this.host.pos;
             }
-            this._target = Game.getObjectById(this.memory.target) || Game.rooms[this.memory.target];
+            const target = this.memory.target;
+            this._target = new RoomPosition(~~target.x, ~~target.y, target.roomName);
         }
         return this._target;
     }
     set target(obj){
-        if(obj){
-            this.memory.target = obj.id || obj.name;
-            this._target = obj;
-        }else{
-            delete this.memory.target;
-            delete this._target;
+        if(obj !== this._target){
+            if(obj instanceof RoomPosition){
+                this.memory.target = obj;
+                this._target = obj;
+            }else if(obj && obj.pos){
+                this.memory.target = obj.pos;
+                this._target = obj.pos;
+            }else{
+                delete this.memory.target;
+                delete this._target;
+            }
         }
     }
     get host(){
@@ -207,20 +217,15 @@ export class CreepDevice{
             }
         }
     }
-    public getPathTo(target, range: number = 0, creep: boolean = false){
+    public getPathTo(pos: RoomPosition, range: number = 0, creep: boolean = false){
         const res = PathFinder.search(this.pos, {
-            pos: target.pos || target,
+            pos,
             range
         }, {
             roomCallback: (name) => RoomDevice.costMatrix(name, creep)
         });
         if(res.incomplete){
-            if(range === 0){
-                return this.getPathTo(target, 1);
-            }else{
-                console.log(`WARNING: Incomplete path to ${target}`);
-                return [];
-            }
+            return [];
         }
         return res.path;
     }
@@ -230,40 +235,60 @@ export class CreepDevice{
             return new RoomPosition(~~pos.x, ~~pos.y, pos.roomName);
         }
     }
-    public travelTo(target): number{
-        if(this.target !== target){
+    public travelTo(target: RoomPosition): number{
+        if(!equalPos(this.target, target)){
             this.target = target;
             this.path = this.getPathTo(target);
+            delete this.memory.lastPos;
         }
-        let pos = this.nextPos;
-        if(!pos || !pos.isNearTo(this.pos)){
+        let pos = this.nextPos,
+            lastPos = this.memory.lastPos;
+        if(pos && lastPos && equalPos(lastPos, pos)){
+            this.path = this.getPathTo(target, 0, true);
+            pos = this.nextPos;
+            if(!pos){
+                this.path = this.getPathTo(target, 1, true);
+                pos = this.nextPos;
+            }
+        }else if(!pos || !pos.isNearTo(this.pos)){
             this.path = this.getPathTo(target);
             pos = this.nextPos;
-        }
-        if(!pos){
-            return ERR_NO_PATH;
-        }
-        const res = _.first(pos.look().filter((item) => item.type === 'creep'));
-        if(res){
-            const creep = FS.open('/dev/creep').open(res.creep.id);
-            if(!creep.path.length){
-                this.path = this.getPathTo(target, 0, true);
-                const nextPos = this.nextPos;
-                if(!nextPos || (nextPos.x === pos.x && nextPos.y === pos.y && nextPos.roomName === pos.roomName)){
-                    return ERR_NO_PATH;
-                }else{
-                    pos = nextPos
-                }
+            if(!pos){
+                this.path = this.getPathTo(target, 1);
+                pos = this.nextPos;
             }
         }
-        return this.me.moveTo(pos, {
-            reusePath: 0,
-            serializeMemory: false,
-            visualizePathStyle: {}
-        });
+        if(!pos || equalPos(lastPos, pos)){
+            return ERR_NO_PATH;
+        }
+        const room = this.room,
+            visual = room.visual,
+            style = {
+                width: 0.1,
+                color: '#ffffff',
+                opacity: 0.5,
+                lineStyle: 'dashed'
+            };
+        if(pos.roomName === room.name){
+            visual.line(this.pos, pos, style);
+            if(this.path.length){
+                lastPos = pos;
+                this.path
+                    .filter((pos) => pos.roomName === room.name)
+                    .forEach((pos) => {
+                        visual.line(lastPos, pos, style);
+                        lastPos = pos;
+                    });
+            }
+        }
+        this.memory.lastPos = pos;
+        return this.me.move(this.pos.getDirectionTo(pos));
     }
     public isAt(pos: RoomPosition): boolean{
-        return this.pos.roomName === pos.roomName && this.pos.x === pos.x && this.pos.y === pos.y;
+        return equalPos(this.pos, pos);
+    }
+    public targetIs(pos: RoomPosition): boolean{
+        return equalPos(this.target, pos);
     }
 }
 
