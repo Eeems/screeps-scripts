@@ -224,9 +224,6 @@ export class CreepDevice{
         }, {
             roomCallback: (name) => RoomDevice.costMatrix(name, creep)
         });
-        if(res.incomplete){
-            return [];
-        }
         return res.path;
     }
     get nextPos(): RoomPosition{
@@ -243,23 +240,33 @@ export class CreepDevice{
         }
         let pos = this.nextPos,
             lastPos = this.memory.lastPos;
-        if(pos && lastPos && equalPos(lastPos, pos)){
-            this.path = this.getPathTo(target, 0, true);
-            pos = this.nextPos;
-            if(!pos){
-                this.path = this.getPathTo(target, 1, true);
-                pos = this.nextPos;
-            }
-        }else if(!pos || !pos.isNearTo(this.pos)){
+        if(!this.validNextPos(pos)){
             this.path = this.getPathTo(target);
             pos = this.nextPos;
-            if(!pos){
+            if(!this.validNextPos(pos)){
                 this.path = this.getPathTo(target, 1);
                 pos = this.nextPos;
             }
         }
-        if(!pos || equalPos(lastPos, pos)){
+        if(!this.validNextPos(pos)){
+            if(pos){
+                this.memory.lastPos = pos;
+            }
             return ERR_NO_PATH;
+        }
+        if(lastPos && equalPos(lastPos, pos)){
+            this.path = this.getPathTo(target, 0, true);
+            pos = this.nextPos;
+            if(!this.validNextPos(pos) || (lastPos && equalPos(lastPos, pos))){
+                this.path = this.getPathTo(target, 1, true);
+                pos = this.nextPos;
+                if(!this.validNextPos(pos)){
+                    if(pos){
+                        this.memory.lastPos = pos;
+                    }
+                    return ERR_NO_PATH;
+                }
+            }
         }
         const room = this.room,
             visual = room.visual,
@@ -289,6 +296,9 @@ export class CreepDevice{
     }
     public targetIs(pos: RoomPosition): boolean{
         return equalPos(this.target, pos);
+    }
+    private validNextPos(pos: RoomPosition){
+        return pos && this.pos.isNearTo(pos);
     }
 }
 

@@ -19,11 +19,11 @@ function getNextTarget(creep){
         );
     }
 }
-function spawnAt(pos: RoomPosition){
+function storageStructureAt(pos: RoomPosition){
     if(pos && pos.look){
         return _.first(
             pos.look()
-                .filter((item) => item.type === 'structure' && item.structure.structureType === STRUCTURE_SPAWN)
+                .filter((item) => item.type === 'structure' && ~([STRUCTURE_SPAWN, STRUCTURE_STORAGE, STRUCTURE_EXTENSION, STRUCTURE_CONTAINER] as string[]).indexOf(item.structure.structureType))
                 .map((item) => item.structure)
         );
     }
@@ -38,11 +38,11 @@ function depositAtTarget(creep: CreepDevice): number{
     if(!creep.pos.isNearTo(creep.target)){
         return creep.travelTo(creep.target);
     }
-    const spawn = spawnAt(creep.target);
-    if(!spawn){
+    const structure = storageStructureAt(creep.target);
+    if(!structure){
         return ERR_INVALID_TARGET;
     }
-    const code = creep.me.transfer(spawn, RESOURCE_ENERGY);
+    const code = creep.me.transfer(structure, RESOURCE_ENERGY);
     switch(code){
         case ERR_NOT_IN_RANGE:
             return creep.travelTo(creep.target);
