@@ -1,4 +1,6 @@
+import {default as C} from '../kernel/constants';
 import {FS} from '../kernel/fs';
+import {default as memory} from '../kernel/memory';
 import * as SYSCALL from '../kernel/syscall';
 
 function setup(){
@@ -42,6 +44,7 @@ function kill(e?: any){
         device.open(creep.id).kill();
         device.remove(creep.id);
     }
+    delete memory.get(C.SEGMENTS.DEVICES).creeps[this.args[0]];
 }
 
 export default {

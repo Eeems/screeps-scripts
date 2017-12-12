@@ -27,7 +27,7 @@ export class CreepDevice{
         if(this._time !== Game.time){
             this._time = Game.time;
             if(!this._name){
-                this._name = this.name;
+                this._name = this.me.name;
             }
             const dmem = memory.get(C.SEGMENTS.DEVICES);
             if(!dmem.creeps){
@@ -46,8 +46,7 @@ export class CreepDevice{
         return this._id;
     }
     get name(): string{
-        const me = this.me;
-        return me ? me.name : this._name;
+        return this._name;
     }
     get me(): Creep{
         return Game.getObjectById(this.id) as Creep;
@@ -104,7 +103,9 @@ export class CreepDevice{
                 this.memory.target = this.host.pos;
             }
             const target = this.memory.target;
-            this._target = new RoomPosition(~~target.x, ~~target.y, target.roomName);
+            if(target){
+                this._target = new RoomPosition(~~target.x, ~~target.y, target.roomName);
+            }
         }
         return this._target;
     }
@@ -136,18 +137,24 @@ export class CreepDevice{
         return this._host;
     }
     set host(host){
-        this.memory.host = host.id;
+        if(host){
+            this.memory.host = host.id || host;
+        }else{
+            delete this.memory.host;
+        }
         delete this._host;
     }
     get hostPos(){
         this.uncache();
         if(!this._hostPos){
             let id = this.memory.host;
-            if(id.includes('.')){
-                id = id.split('.');
-                this._hostPos = this.host.room.getPositionAt(id[1], id[2]);
-            }else{
-                this._hostPos = this.host.pos;
+            if(id){
+                if(id.includes('.')){
+                    id = id.split('.');
+                    this._hostPos = this.host.room.getPositionAt(id[1], id[2]);
+                }else if(this.host){
+                    this._hostPos = this.host.pos;
+                }
             }
         }
         return this._hostPos;
@@ -233,6 +240,9 @@ export class CreepDevice{
         }
     }
     public travelTo(target: RoomPosition): number{
+        if(this.isAt(target)){
+            return OK;
+        }
         if(!equalPos(this.target, target)){
             this.target = target;
             this.path = this.getPathTo(target);
@@ -246,13 +256,11 @@ export class CreepDevice{
             if(!this.validNextPos(pos)){
                 this.path = this.getPathTo(target, 1);
                 pos = this.nextPos;
+                if(!this.validNextPos(pos)){
+                    delete this.memory.lastPos;
+                    return ERR_NO_PATH;
+                }
             }
-        }
-        if(!this.validNextPos(pos)){
-            if(pos){
-                this.memory.lastPos = pos;
-            }
-            return ERR_NO_PATH;
         }
         if(lastPos && equalPos(lastPos, pos)){
             this.path = this.getPathTo(target, 0, true);
@@ -261,9 +269,7 @@ export class CreepDevice{
                 this.path = this.getPathTo(target, 1, true);
                 pos = this.nextPos;
                 if(!this.validNextPos(pos)){
-                    if(pos){
-                        this.memory.lastPos = pos;
-                    }
+                    delete this.memory.lastPos;
                     return ERR_NO_PATH;
                 }
             }
@@ -326,8 +332,8 @@ export default {
     register,
     remove: (id): void => {
         FS.remove(`/dev/creep/${id}`);
+        delete memory.get(C.SEGMENTS.DEVICES).creeps[creeps[id].name];
         delete creeps[id];
-        delete memory.get(C.SEGMENTS.DEVICES).creeps[id];
     },
     save: (id?): void => {
         if(!id){

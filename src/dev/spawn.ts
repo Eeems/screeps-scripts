@@ -81,11 +81,12 @@ export class SpawnDevice{
     get queued(): boolean{
         return this.queue  && !!this.queue.length;
     }
-    public add(role: string, host: any): void{
-        this._queue.push({
-            host: host.id,
-            role
-        });
+    public add(role: string, host?: any): void{
+        let item: {role: string, host?: string} = { role };
+        if(host !== undefined){
+            item.host = host.id || host
+        }
+        this._queue.push(item);
     }
     public spawnNext(){
         if(!this.spawning && this.queued){

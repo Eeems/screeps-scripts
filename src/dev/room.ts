@@ -45,7 +45,7 @@ export class RoomDevice{
         return visual;
     }
     get controller(){
-        return FS.open('/dev/controller').open(this.me.controller.id);
+        return this.me.controller;
     }
     get storage(){
         return this.me.storage;

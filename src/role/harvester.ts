@@ -1,4 +1,6 @@
 import {CreepDevice} from '../dev/creep';
+import {SpawnDevice} from '../dev/spawn';
+import { FS } from '../kernel/fs';
 import {default as C} from '../kernel/constants';
 import {default as Role} from '../kernel/role';
 
@@ -19,13 +21,12 @@ function getNextTarget(creep){
         );
     }
 }
-function storageStructureAt(pos: RoomPosition){
+function storageStructureAt(pos: RoomPosition): Structure{
     if(pos && pos.look){
         return _.first(
-            pos.look()
-                .filter((item) => item.type === 'structure' && ~([STRUCTURE_SPAWN, STRUCTURE_STORAGE, STRUCTURE_EXTENSION, STRUCTURE_CONTAINER] as string[]).indexOf(item.structure.structureType))
-                .map((item) => item.structure)
-        );
+            pos.lookFor(LOOK_STRUCTURES)
+                .filter((s: Structure) => ~([STRUCTURE_SPAWN, STRUCTURE_STORAGE, STRUCTURE_EXTENSION, STRUCTURE_CONTAINER] as string[]).indexOf(s.structureType))
+        ) as Structure;
     }
 }
 function depositAtTarget(creep: CreepDevice): number{
@@ -56,37 +57,38 @@ function depositAtTarget(creep: CreepDevice): number{
     return code;
 }
 function harvestFromHost(creep: CreepDevice): number{
-    if(creep.isAt(creep.hostPos)){
-        const code = creep.me.harvest(creep.host);
-        if(code === ERR_NOT_IN_RANGE){
-            return creep.travelTo(creep.hostPos);
+    if(!FS.open('/dev/source').open(creep.host.id).safe){
+        const spawn = _.min(creep.room.spawns, (s: SpawnDevice) => creep.pos.getRangeTo(s));
+        if(!spawn){
+            return ERR_NO_PATH;
         }
-        return code;
-    }else{
-        return creep.travelTo(creep.hostPos);
+        return creep.travelTo(spawn.pos);
+    }else if(creep.isAt(creep.hostPos)){
+        return creep.me.harvest(creep.host);
     }
+    console.log(`${creep.name} ${creep.pos} => ${creep.hostPos}`);
+    return creep.travelTo(creep.hostPos);
 }
 
-function logCode(creep: CreepDevice, code: number, action?: string){
+function logCode(creep: CreepDevice, fn: (creep: CreepDevice) => number){
+    const code = fn(creep);
     if(!~([OK, ERR_TIRED, ERR_BUSY] as number[]).indexOf(code)){
         const msg = C.ERROR_MESSAGES[code] || `${code}`;
         console.log(`Creep#${creep.name}: ${msg}`);
-        if(action){
-            console.log(`  Action: ${action}`);
-        }
+        console.log(`  Action: ${fn.name}`);
         console.log(`  Host:   ${creep.host}`);
         console.log(`  Target: ${creep.target}`);
     }
 }
 
 export default {
-    body: () => [MOVE, CARRY, WORK],
+    body: () => [MOVE, MOVE, CARRY, CARRY, WORK],
     name: 'harvester',
     run: (creep: CreepDevice): void => {
-        if(!creep.isFull){
-            logCode(creep, harvestFromHost(creep), 'harvest');
+        if(creep.isFull){
+            logCode(creep, depositAtTarget);
         }else{
-            logCode(creep, depositAtTarget(creep), 'deposit');
+            logCode(creep, harvestFromHost);
         }
     }
 } as Role;

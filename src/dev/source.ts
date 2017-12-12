@@ -52,7 +52,7 @@ export class SourceDevice{
     get spawning(){
         return this.room.spawns.reduce((spawning, spawn) => {
             spawn.queue
-                .filter((item) => item.host.split('.')[0] === this.id)
+                .filter((item) => item.host && item.host.split('.')[0] === this.id)
                 .forEach((item) => spawning.push(item));
             return spawning;
         }, []);
@@ -106,7 +106,7 @@ export class SourceDevice{
         return this.spaces.filter((space) => !~hosts.indexOf(space.id));
     }
     public ensureHarvesters(){
-        if(this.freeSpaces.length){
+        if(this.safe && this.freeSpaces.length){
             this.freeSpaces.forEach((space, i) => {
                 const spawn = _.min(this.room.spawns, (spawn) => this.pos.getRangeTo(spawn.pos)) as SpawnDevice;
                 if(spawn && spawn.add){
