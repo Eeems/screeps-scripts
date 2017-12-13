@@ -72,14 +72,14 @@ export default {
             logCode(creep, refuelFromTarget);
         }
         const visual = creep.room.visual;
-        if(creep.host){
+        if(creep.host && creep.carry.energy){
             if(creep.host instanceof ConstructionSite){
                 visual.text('🔨', creep.hostPos);
             }else if(creep.host instanceof StructureController){
                 visual.text('🔧', creep.hostPos);
             }
         }
-        if(creep.target && !creep.targetIs(creep.hostPos)){
+        if(creep.target && !creep.isFull && !creep.targetIs(creep.hostPos)){
             visual.text('🔌', creep.target);
         }
     }

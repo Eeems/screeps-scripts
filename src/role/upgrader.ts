@@ -78,10 +78,10 @@ export default {
             logCode(creep, getEnergy);
         }
         const visual = creep.room.visual;
-        if(creep.host){
+        if(creep.host && creep.carry.energy){
             visual.text('🔧', creep.hostPos);
         }
-        if(creep.target && !creep.targetIs(creep.hostPos)){
+        if(creep.target && !creep.targetIs(creep.hostPos) && creep.pos.isNearTo(creep.target)){
             visual.text('🔌', creep.target);
         }
     }

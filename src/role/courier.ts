@@ -52,10 +52,10 @@ export default {
             }
         }
         const visual = creep.room.visual;
-        if(creep.host && creep.pos.isNearTo(creep.hostPos)){
+        if(creep.host && creep.carry.energy && creep.pos.isNearTo(creep.hostPos)){
             visual.text('🔋', creep.hostPos);
         }
-        if(creep.target && !creep.targetIs(creep.hostPos)){
+        if(creep.target && !creep.isFull && !creep.targetIs(creep.hostPos)){
             visual.text('🔌', creep.target);
         }
     }

@@ -113,7 +113,7 @@ export default {
         if(creep.host){
             visual.text('⛏', creep.hostPos);
         }
-        if(creep.target && !creep.targetIs(creep.hostPos)){
+        if(creep.target && creep.carry.energy && !creep.targetIs(creep.hostPos)){
             visual.text('🔋', creep.target);
         }
     }
