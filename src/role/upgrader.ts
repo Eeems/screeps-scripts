@@ -2,9 +2,14 @@ import {CreepDevice} from '../dev/creep';
 import {default as C} from '../kernel/constants';
 import {default as Role} from '../kernel/role';
 
-function refuelFromTarget(creep: CreepDevice): number{
+function getEnergy(creep: CreepDevice): number{
     if(!creep.target || creep.targetIs(creep.hostPos)){
-        let targets = creep.room.storageStructures.filter((s: {store: any}) => _.sum(s.store));
+        let targets = creep.room.me.find(FIND_DROPPED_RESOURCES, {
+            filter: (r: Resource) => r.resourceType === RESOURCE_ENERGY
+        });
+        if(!targets.length){
+            targets = creep.room.storageStructures.filter((s: {store: any}) => _.sum(s.store));
+        }
         if(!targets.length && creep.room.controller.ticksToDowngrade < 100){
             targets = creep.room.energyStructures.filter((s: {energy: number}) => s.energy);
         }
@@ -23,12 +28,23 @@ function refuelFromTarget(creep: CreepDevice): number{
                 .lookFor(LOOK_STRUCTURES)
                 .filter((s: Structure) => ~([STRUCTURE_EXTENSION, STRUCTURE_SPAWN, STRUCTURE_STORAGE, STRUCTURE_CONTAINER] as string[]).indexOf(s.structureType))
         ) as Structure;
-        return structure ? creep.me.withdraw(structure, RESOURCE_ENERGY) : ERR_NO_PATH;
+        if(structure){
+            return creep.me.withdraw(structure, RESOURCE_ENERGY)
+        }
+        const energy = _.first(
+            creep.target
+                .lookFor(LOOK_RESOURCES)
+                .filter((r: Resource) => r.resourceType === RESOURCE_ENERGY)
+        ) as Resource;
+        if(energy){
+            return creep.me.pickup(energy);
+        }
+        return ERR_NO_PATH;
     }
     return creep.travelTo(creep.target);
 }
 
-function buildHost(creep: CreepDevice): number{
+function upgradehost(creep: CreepDevice): number{
     if(!creep.host || !(creep.host instanceof StructureController)){
         creep.host = creep.room.controller;
     }
@@ -57,9 +73,9 @@ export default {
     name: 'upgrader',
     run: (creep: CreepDevice): void => {
         if(creep.carry.energy){
-            logCode(creep, buildHost);
+            logCode(creep, upgradehost);
         }else{
-            logCode(creep, refuelFromTarget);
+            logCode(creep, getEnergy);
         }
         const visual = creep.room.visual;
         if(creep.host){

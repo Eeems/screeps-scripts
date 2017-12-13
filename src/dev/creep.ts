@@ -81,7 +81,7 @@ export class CreepDevice{
         this.uncache();
         if(!this._target){
             if(!this.memory.target || typeof this.memory.target !== 'object'){
-                this.memory.target = this.host.pos;
+                this.memory.target = this.host ? this.host.pos : undefined;
             }
             const target = this.memory.target;
             if(target){

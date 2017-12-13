@@ -14,27 +14,27 @@ function run(){
     const room = FS.open('/dev/room').open(this.args[0]);
     if(room){
         room.sources.forEach((source) => source.ensureHarvesters());
-        room.spawns.forEach((spawn) => spawn.spawnNext());
         const spawns = room.spawns.filter((spawn) => !spawn.spawning);
         if(spawns.length){
             if(
                 !room.creepsWithRole('builder').length &&
-                !room.spawns.filter((s) => s.queue.filter((item) => item.role.name === 'builder').length).length
+                !room.queuedWithRole('builder').length
             ){
                 spawns.pop().add('builder', room);
             }
             if(
                 spawns.length &&
-                !room.creepsWithRole('upgrader').length
+                !room.creepsWithRole('upgrader').length &&
+                !room.queuedWithRole('upgrader').length
             ){
                 spawns[0].add('upgrader', room);
             }
         }
+        room.spawns.forEach((spawn) => spawn.spawnNext());
         const containers = room.containers,
             limit = C.BUILDING_LIMITS.CONTAINERS - containers.length;
         if(limit){
             let spaces = room.sourceSpaces || [];
-            console.log(`${this.args[0]} spaces: ${spaces.length}`);
             if(spaces.length > limit){
                 spaces = _.take(
                     _.sortBy(
@@ -48,6 +48,8 @@ function run(){
                 );
             }
             spaces.forEach((space: SourceSpace) => space.pos.createConstructionSite(STRUCTURE_CONTAINER));
+        }else{
+            // todo handle plotting roads
         }
     }else{
         SYSCALL.kill(1);

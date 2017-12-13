@@ -1,6 +1,7 @@
 import {FS} from '../kernel/fs';
 import {CreepDevice} from './creep';
 import {SourceDevice, SourceSpace} from './source';
+import {SpawnDevice} from './spawn';
 
 const rooms = {},
     costMatrix = {},
@@ -82,7 +83,7 @@ export class RoomDevice{
     }
     get containers(): StructureContainer[]{
         return this.storageStructures
-            .filter((s: Structure) => s.structureType = STRUCTURE_CONTAINER) as StructureContainer[];
+            .filter((s: Structure) => s.structureType === STRUCTURE_CONTAINER) as StructureContainer[];
     }
     get sourceSpaces(): SourceSpace[]{
         return _.flatten(
@@ -128,6 +129,12 @@ export class RoomDevice{
     }
     public creepsWithRole(role: string){
         return this.creeps.filter((c: CreepDevice) => c.role.name === role);
+    }
+    public queuedWithRole(role: string){
+        return _.flatten(
+            this.spawns
+                .map((s: SpawnDevice) => s.queue.filter((item) => item.role.name === 'builder'))
+        );
     }
     private uncache(){
         if(this._time !== Game.time){
@@ -176,13 +183,16 @@ export default {
             if(room){
                 const costs = new PathFinder.CostMatrix();
                 room.find(FIND_STRUCTURES).forEach((s: any) => {
-                    if(s.structureType === STRUCTURE_ROAD){
-                        costs.set(s.pos.x, s.pos.y, 1);
-                    }else if(
-                        !~[STRUCTURE_CONTAINER, STRUCTURE_RAMPART, STRUCTURE_ROAD].indexOf(s.structureType) ||
-                        !s.my
-                    ){
-                        costs.set(s.pos.x, s.pos.y, 0xff);
+                    switch(s.structureType){
+                        case STRUCTURE_ROAD:
+                            costs.set(s.pos.x, s.pos.y, 1);
+                            break;
+                        case STRUCTURE_CONTAINER:
+                        case STRUCTURE_RAMPART:
+                            costs.set(s.pos.x, s.pos.y, 2);
+                            break;
+                        default:
+                            costs.set(s.pos.x, s.pos.y, 0xff);
                     }
                 });
                 room.find(creep ? FIND_CREEPS : FIND_HOSTILE_CREEPS)

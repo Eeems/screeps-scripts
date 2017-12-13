@@ -20,6 +20,7 @@ export class SpawnDevice{
     private _time: number;
     private _id: string;
     private _queue: any[];
+    private _spawning: boolean;
     constructor(id: string){
         this._id = id;
         this.uncache();
@@ -90,9 +91,13 @@ export class SpawnDevice{
     }
     public spawnNext(){
         if(!this.spawning && this.queued){
-            const item = transformQueueItem(this._queue.pop());
+            const item = transformQueueItem(this._queue[0]);
             if(this.energy >= this.spawnCost(item.role)){
-                return this.spawn(item.role, item.host);
+                const code = this.spawn(item.role, item.host);
+                if(code === OK){
+                    this._spawning = true;
+                }
+                return code;
             }
         }
     }
@@ -123,6 +128,9 @@ export class SpawnDevice{
         const dmem = memory.get(C.SEGMENTS.DEVICES);
         if(!dmem.spawnQueue){
             dmem.spawnQueue = {};
+        }
+        if(this._spawning){
+            this._queue.shift();
         }
         dmem.spawnQueue[this.id] = this._queue;
     }
