@@ -71,14 +71,15 @@ function ensureBase(room: RoomDevice): void{
 function run(){
     const room = FS.open('/dev/room').open(this.args[0]) as RoomDevice;
     if(room){
-        room.sources.forEach((source: SourceDevice) => source.ensureHarvesters());
-        const spawns = room.spawns as SpawnDevice[],
+        const sources = room.sources,
+            spawns = room.spawns as SpawnDevice[],
             hasContainers = !!room.containers.length,
             availableSpawns = spawns.filter((spawn: SpawnDevice) => !spawn.spawning) as SpawnDevice[];
+        sources.forEach((source: SourceDevice) => source.ensureHarvesters());
         if(availableSpawns.length){
             if(
                 !room.creepsWithRole('builder').length &&
-                room.queuedWithRole('builder').length < (hasContainers ? 2 : 1)
+                room.queuedWithRole('builder').length < (hasContainers ? sources.length : 1)
             ){
                 availableSpawns.pop().add('builder', room);
             }
