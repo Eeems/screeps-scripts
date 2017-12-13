@@ -2,6 +2,7 @@ import {FS} from './kernel/fs';
 import * as Kernel from './kernel/kernel';
 import { default as  memory } from './kernel/memory';
 import './plugins/LoAN.injecT';
+import './plugins/toString.link';
 import C from './kernel/constants';
 
 global.Kernel = Kernel;
