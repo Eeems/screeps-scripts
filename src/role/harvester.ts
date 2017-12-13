@@ -79,7 +79,9 @@ function depositIfNear(creep: CreepDevice): void{
     }) as Structure[];
     if(structures.length){
         creep.target = structures[0];
-        creep.me.transfer(structures[0], RESOURCE_ENERGY);
+        if(creep.me.transfer(structures[0], RESOURCE_ENERGY) === OK){
+            creep.room.visual.text('🔋', structures[0].pos);
+        }
     }
 }
 
