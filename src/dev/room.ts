@@ -118,7 +118,7 @@ export class RoomDevice{
         }
         return this._sources.map(FS.open('/dev/source').open);
     }
-    get creeps(){
+    get creeps(): CreepDevice[]{
         this.uncache();
         if(this._creeps === undefined){
             this._creeps = this.me
@@ -127,13 +127,13 @@ export class RoomDevice{
         }
         return this._creeps.map(FS.open('/dev/creep').open);
     }
-    public creepsWithRole(role: string){
+    public creepsWithRole(role: string): CreepDevice[]{
         return this.creeps.filter((c: CreepDevice) => c.role.name === role);
     }
     public queuedWithRole(role: string){
         return _.flatten(
             this.spawns
-                .map((s: SpawnDevice) => s.queue.filter((item) => item.role.name === 'builder'))
+                .map((s: SpawnDevice) => s.queue.filter((item) => item.role.name === role))
         );
     }
     private uncache(){

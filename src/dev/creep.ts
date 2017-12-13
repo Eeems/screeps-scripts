@@ -206,13 +206,12 @@ export class CreepDevice{
         }
     }
     public getPathTo(pos: RoomPosition, range: number = 0, creep: boolean = false){
-        const res = PathFinder.search(this.pos, {
+        return PathFinder.search(this.pos, {
             pos,
             range
         }, {
             roomCallback: (name) => RoomDevice.costMatrix(name, creep)
-        });
-        return res.path;
+        }).path;
     }
     get nextPos(): RoomPosition{
         if(this.path && this.path.length){
