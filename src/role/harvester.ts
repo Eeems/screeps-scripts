@@ -1,7 +1,7 @@
 import {CreepDevice} from '../dev/creep';
 import {SpawnDevice} from '../dev/spawn';
-import { FS } from '../kernel/fs';
 import {default as C} from '../kernel/constants';
+import { FS } from '../kernel/fs';
 import {default as Role} from '../kernel/role';
 
 function notFull(structures){
@@ -25,7 +25,9 @@ function storageStructureAt(pos: RoomPosition): Structure{
     if(pos && pos.look){
         return _.first(
             pos.lookFor(LOOK_STRUCTURES)
-                .filter((s: Structure) => ~([STRUCTURE_SPAWN, STRUCTURE_STORAGE, STRUCTURE_EXTENSION, STRUCTURE_CONTAINER] as string[]).indexOf(s.structureType))
+                .filter((s: Structure) => ~([
+                    STRUCTURE_SPAWN, STRUCTURE_STORAGE, STRUCTURE_EXTENSION, STRUCTURE_CONTAINER
+                ] as string[]).indexOf(s.structureType))
         ) as Structure;
     }
 }
@@ -89,6 +91,13 @@ export default {
             logCode(creep, depositAtTarget);
         }else{
             logCode(creep, harvestFromHost);
+        }
+        const visual = creep.room.visual;
+        if(creep.host){
+            visual.text('⛏', creep.hostPos);
+        }
+        if(creep.target && !creep.targetIs(creep.hostPos)){
+            visual.text('🔋', creep.target);
         }
     }
 } as Role;

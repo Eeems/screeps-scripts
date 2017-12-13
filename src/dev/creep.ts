@@ -1,6 +1,6 @@
 import {default as C} from '../kernel/constants';
-import { FS } from '../kernel/fs';
-import { default as memory } from '../kernel/memory';
+import {FS} from '../kernel/fs';
+import {default as memory} from '../kernel/memory';
 import {default as Role} from '../kernel/role';
 import {default as RoomDevice} from '../dev/room';
 
@@ -22,25 +22,6 @@ export class CreepDevice{
         this._id = id;
         this.uncache();
         creeps[id] = this;
-    }
-    private uncache(){
-        if(this._time !== Game.time){
-            this._time = Game.time;
-            if(!this._name){
-                this._name = this.me.name;
-            }
-            const dmem = memory.get(C.SEGMENTS.DEVICES);
-            if(!dmem.creeps){
-                dmem.creeps = {};
-            }
-            if(!dmem.creeps[this.name]){
-                dmem.creeps[this.name] = {};
-            }
-            this._memory = dmem.creeps[this.name];
-            delete this._host;
-            delete this._target;
-            delete this._hostPos;
-        }
     }
     get id(): string{
         return this._id;
@@ -126,7 +107,7 @@ export class CreepDevice{
     get host(){
         this.uncache();
         if(!this._host){
-            let id = this.memory.host;
+            const id = this.memory.host;
             if(id){
                 this._host = Game.getObjectById(id) || Game.rooms[id];
                 if(!this._host && id.includes('.')){
@@ -277,10 +258,10 @@ export class CreepDevice{
         const room = this.room,
             visual = room.visual,
             style = {
-                width: 0.1,
                 color: '#ffffff',
+                lineStyle: 'dashed',
                 opacity: 0.5,
-                lineStyle: 'dashed'
+                width: 0.1
             };
         if(pos.roomName === room.name){
             visual.line(this.pos, pos, style);
@@ -305,6 +286,25 @@ export class CreepDevice{
     }
     private validNextPos(pos: RoomPosition){
         return pos && this.pos.isNearTo(pos);
+    }
+    private uncache(){
+        if(this._time !== Game.time){
+            this._time = Game.time;
+            if(!this._name){
+                this._name = this.me.name;
+            }
+            const dmem = memory.get(C.SEGMENTS.DEVICES);
+            if(!dmem.creeps){
+                dmem.creeps = {};
+            }
+            if(!dmem.creeps[this.name]){
+                dmem.creeps[this.name] = {};
+            }
+            this._memory = dmem.creeps[this.name];
+            delete this._host;
+            delete this._target;
+            delete this._hostPos;
+        }
     }
 }
 

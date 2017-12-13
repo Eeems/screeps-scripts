@@ -3,9 +3,9 @@ import {default as C} from '../kernel/constants';
 import {default as Role} from '../kernel/role';
 
 function refuelFromTarget(creep: CreepDevice): number{
-    if(!creep.target || creep.targetIs(creep.hostPos) || creep.targetIs(creep.room.controller.pos)){
+    if(!creep.target || creep.targetIs(creep.hostPos)){
         let targets = creep.room.storageStructures.filter((s: {store: any}) => _.sum(s.store));
-        if(!targets.length){
+        if(!targets.length && creep.room.controller.ticksToDowngrade < 100){
             targets = creep.room.energyStructures.filter((s: {energy: number}) => s.energy);
         }
         if(targets.length){
@@ -29,24 +29,14 @@ function refuelFromTarget(creep: CreepDevice): number{
 }
 
 function buildHost(creep: CreepDevice): number{
-    if(!creep.host || !(creep.host instanceof ConstructionSite)){
-        const sites = creep.room.me.find(FIND_MY_CONSTRUCTION_SITES);
-        if(!sites.length){
-            const controller = creep.room.controller,
-                pos = controller.pos;
-            if(!creep.pos.inRangeTo(pos, 3)){
-                return creep.travelTo(pos);
-            }
-            return creep.me.upgradeController(controller);
-        }
-        creep.host = _.min(
-            sites,
-            (c: ConstructionSite) => creep.pos.getRangeTo(c)
-        );
-        return OK;
+    if(!creep.host || !(creep.host instanceof StructureController)){
+        creep.host = creep.room.controller;
     }
     if(creep.pos.inRangeTo(creep.hostPos, 3)){
-        return creep.me.build(creep.host);
+        if(!creep.targetIs(creep.hostPos)){
+            creep.target = creep.hostPos;
+        }
+        return creep.me.upgradeController(creep.host);
     }
     return creep.travelTo(creep.hostPos);
 }
@@ -64,7 +54,7 @@ function logCode(creep: CreepDevice, fn: (creep: CreepDevice) => number){
 
 export default {
     body: () => [MOVE, MOVE, CARRY, CARRY, WORK],
-    name: 'builder',
+    name: 'upgrader',
     run: (creep: CreepDevice): void => {
         if(creep.carry.energy){
             logCode(creep, buildHost);
@@ -73,11 +63,7 @@ export default {
         }
         const visual = creep.room.visual;
         if(creep.host){
-            if(creep.host instanceof ConstructionSite){
-                visual.text('🔨', creep.hostPos);
-            }else if(creep.host instanceof StructureController){
-                visual.text('🔧', creep.hostPos);
-            }
+            visual.text('🔧', creep.hostPos);
         }
         if(creep.target && !creep.targetIs(creep.hostPos)){
             visual.text('🔋', creep.target);

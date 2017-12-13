@@ -19,12 +19,6 @@ export class SourceDevice{
         this.uncache();
         sources[id] = this;
     }
-    private uncache(){
-        if(this._time !== Game.time){
-            this._time = Game.time;
-            delete this._spaces;
-        }
-    }
     get me(): Source{
         return Game.getObjectById(this.id) as Source;
     }
@@ -65,7 +59,7 @@ export class SourceDevice{
                 this.room.me.lookAtArea(this.pos.y - 1, this.pos.x - 1, this.pos.y + 1, this.pos.x + 1),
                 (items, y) => {
                     _.each(items, (subitems, x) => {
-                        if((this.pos.x !== ~~x || this.pos.y != ~~y) && _.reduce(
+                        if((this.pos.x !== ~~x || this.pos.y !== ~~y) && _.reduce(
                             subitems,
                             (passable, item: {type: string, terrain?: string, structure?: Structure}) => {
                                 if(passable){
@@ -73,8 +67,6 @@ export class SourceDevice{
                                         passable = item.terrain !== 'wall';
                                     }else if(item.type === 'structure'){
                                         passable = !~OBSTACLE_OBJECT_TYPES.indexOf(item.structure.structureType);
-                                    }else{
-                                        passable = item.type !== 'creep';
                                     }
                                 }
                                 return passable;
@@ -95,7 +87,7 @@ export class SourceDevice{
             pos: this.room.me.getPositionAt(space.x, space.y)
         }));
     }
-    get freeSpaces(){
+    get freeSpaces(): SourceSpace[]{
         const hosts = _.union(
             this.room
                 .creeps
@@ -105,14 +97,30 @@ export class SourceDevice{
         );
         return this.spaces.filter((space) => !~hosts.indexOf(space.id));
     }
+    get occupiedSpaces(): SourceSpace[]{
+        const hosts = _.union(
+            this.room
+                .creeps
+                .filter((creep) => creep.hostPos)
+                .map((creep) => creep.memory.host),
+            this.spawning.map((item) => item.host)
+        );
+        return this.spaces.filter((space) => ~hosts.indexOf(space.id));
+    }
     public ensureHarvesters(){
         if(this.safe && this.freeSpaces.length){
             this.freeSpaces.forEach((space, i) => {
-                const spawn = _.min(this.room.spawns, (spawn) => this.pos.getRangeTo(spawn.pos)) as SpawnDevice;
+                const spawn = _.min(this.room.spawns, (s) => this.pos.getRangeTo(s.pos)) as SpawnDevice;
                 if(spawn && spawn.add){
                     spawn.add('harvester', space);
                 }
             });
+        }
+    }
+    private uncache(){
+        if(this._time !== Game.time){
+            this._time = Game.time;
+            delete this._spaces;
         }
     }
 }

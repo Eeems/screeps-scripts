@@ -1,4 +1,6 @@
-import { FS } from '../kernel/fs';
+import {FS} from '../kernel/fs';
+import {CreepDevice} from './creep';
+import {SourceDevice, SourceSpace} from './source';
 
 const rooms = {},
     costMatrix = {},
@@ -17,16 +19,6 @@ export class RoomDevice{
         this._id = id;
         this.uncache();
         rooms[id] = this;
-    }
-    private uncache(){
-        if(this._time !== Game.time){
-            this._time = Game.time;
-            delete this._energyStructures;
-            delete this._storageStructures;
-            delete this._spawns;
-            delete this._sources;
-            delete this._creeps;
-        }
     }
     get id(){
         return this.name;
@@ -69,7 +61,8 @@ export class RoomDevice{
         if(this._energyStructures === undefined){
             this._energyStructures = this.me
                 .find(FIND_STRUCTURES,{
-                    filter:(s: Structure) => s.isActive() && !!~([STRUCTURE_EXTENSION, STRUCTURE_SPAWN] as string[]).indexOf(s.structureType)
+                    filter:(s: Structure) => s.isActive() &&
+                        !!~([STRUCTURE_EXTENSION, STRUCTURE_SPAWN] as string[]).indexOf(s.structureType)
                 })
                 .map((s: Structure) => s.id);
         }
@@ -80,11 +73,31 @@ export class RoomDevice{
         if(this._storageStructures === undefined){
             this._storageStructures = this.me
                 .find(FIND_STRUCTURES, {
-                        filter: (s: Structure) => s.isActive() &&!!~([STRUCTURE_STORAGE, STRUCTURE_CONTAINER] as string[]).indexOf(s.structureType)
+                        filter: (s: Structure) => s.isActive() &&
+                            !!~([STRUCTURE_STORAGE, STRUCTURE_CONTAINER] as string[]).indexOf(s.structureType)
                 })
                 .map((s: Structure) => s.id);
         }
         return this._storageStructures.map((id) => Game.getObjectById(id));
+    }
+    get containers(): StructureContainer[]{
+        return this.storageStructures
+            .filter((s: Structure) => s.structureType = STRUCTURE_CONTAINER) as StructureContainer[];
+    }
+    get sourceSpaces(): SourceSpace[]{
+        return _.flatten(
+            this.sources.map((source: SourceDevice) => source.spaces)
+        ) as SourceSpace[];
+    }
+    get freeSourceSpaces(): SourceSpace[]{
+        return _.flatten(
+            this.sources.map((source: SourceDevice) => source.freeSpaces)
+        ) as SourceSpace[];
+    }
+    get occupiedSourceSpaces(){
+        return _.flatten(
+            this.sources.map((source: SourceDevice) => source.occupiedSpaces)
+        ) as SourceSpace[];
     }
     get spawns(){
         this.uncache();
@@ -113,6 +126,19 @@ export class RoomDevice{
         }
         return this._creeps.map(FS.open('/dev/creep').open);
     }
+    public creepsWithRole(role: string){
+        return this.creeps.filter((c: CreepDevice) => c.role.name === role);
+    }
+    private uncache(){
+        if(this._time !== Game.time){
+            this._time = Game.time;
+            delete this._energyStructures;
+            delete this._storageStructures;
+            delete this._spawns;
+            delete this._sources;
+            delete this._creeps;
+        }
+    }
 }
 
 function has(id): boolean{
@@ -139,8 +165,8 @@ export default {
     costMatrix: (name: string, creep: boolean = false) => {
         if(tick !== Game.time){
             tick = Game.time;
-            _.each(_.keys(creepCostMatrix), (name) => delete creepCostMatrix[name]);
-            _.each(_.keys(costMatrix), (name) => delete costMatrix[name]);
+            _.each(_.keys(creepCostMatrix), (n) => delete creepCostMatrix[n]);
+            _.each(_.keys(costMatrix), (n) => delete costMatrix[n]);
         }
         const matrix = creep ? creepCostMatrix : costMatrix;
         if(matrix[name]){
@@ -148,16 +174,21 @@ export default {
         }else{
             const room = Game.rooms[name];
             if(room){
-                let costs = new PathFinder.CostMatrix;
+                const costs = new PathFinder.CostMatrix();
                 room.find(FIND_STRUCTURES).forEach((s: any) => {
                     if(s.structureType === STRUCTURE_ROAD){
                         costs.set(s.pos.x, s.pos.y, 1);
-                    }else if(!~[STRUCTURE_CONTAINER, STRUCTURE_RAMPART, STRUCTURE_ROAD].indexOf(s.structureType) || !s.my){
+                    }else if(
+                        !~[STRUCTURE_CONTAINER, STRUCTURE_RAMPART, STRUCTURE_ROAD].indexOf(s.structureType) ||
+                        !s.my
+                    ){
                         costs.set(s.pos.x, s.pos.y, 0xff);
                     }
                 });
-                room.find(creep ? FIND_CREEPS : FIND_HOSTILE_CREEPS).forEach((c: Creep) => costs.set(c.pos.x, c.pos.y, 0xff));
-                room.find(FIND_SOURCES).forEach((s: Source) => costs.set(s.pos.x, s.pos.y, 0xff));
+                room.find(creep ? FIND_CREEPS : FIND_HOSTILE_CREEPS)
+                    .forEach((c: Creep) => costs.set(c.pos.x, c.pos.y, 0xff));
+                room.find(FIND_SOURCES)
+                    .forEach((s: Source) => costs.set(s.pos.x, s.pos.y, 0xff));
                 matrix[name] = costs;
                 return costs;
             }
