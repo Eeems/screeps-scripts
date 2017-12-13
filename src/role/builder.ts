@@ -2,8 +2,17 @@ import {CreepDevice} from '../dev/creep';
 import {default as C} from '../kernel/constants';
 import {default as Role} from '../kernel/role';
 
+const VALID_TARGET = [STRUCTURE_EXTENSION, STRUCTURE_SPAWN, STRUCTURE_STORAGE, STRUCTURE_CONTAINER] as string[];
+
 function refuelFromTarget(creep: CreepDevice): number{
-    if(!creep.target || creep.targetIs(creep.hostPos) || creep.targetIs(creep.room.controller.pos)){
+    if(
+        !creep.target ||
+        creep.targetIs(creep.hostPos) ||
+        creep.targetIs(creep.room.controller.pos) ||
+        !creep.target
+            .lookFor(LOOK_STRUCTURES)
+            .filter((s: Structure) => ~VALID_TARGET.indexOf(s.structureType)).length
+    ){
         let targets = creep.room.storageStructures.filter((s: {store: any}) => _.sum(s.store));
         if(!targets.length){
             targets = creep.room.energyStructures.filter((s: {energy: number}) => s.energy);
@@ -21,7 +30,7 @@ function refuelFromTarget(creep: CreepDevice): number{
         const structure = _.first(
             creep.target
                 .lookFor(LOOK_STRUCTURES)
-                .filter((s: Structure) => ~([STRUCTURE_EXTENSION, STRUCTURE_SPAWN, STRUCTURE_STORAGE, STRUCTURE_CONTAINER] as string[]).indexOf(s.structureType))
+                .filter((s: Structure) => ~VALID_TARGET.indexOf(s.structureType))
         ) as Structure;
         return structure ? creep.me.withdraw(structure, RESOURCE_ENERGY) : ERR_NO_PATH;
     }

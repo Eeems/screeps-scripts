@@ -245,7 +245,7 @@ export class CreepDevice{
         if(this.fatigue){
             return ERR_TIRED;
         }
-        if(!this.me.getActiveBodyparts(MOVE).length){
+        if(!this.me.getActiveBodyparts(MOVE)){
             return ERR_NO_BODYPART;
         }
         if(lastPos && equalPos(lastPos, pos)){
