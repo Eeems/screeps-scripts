@@ -52,15 +52,11 @@ export default {
             logIfErr(creep, 'transfer', creep.me.transfer(creep.host, RESOURCE_ENERGY));
         }
         const visual = creep.room.visual;
-        if(creep.host){
-            if(creep.host instanceof ConstructionSite){
-                visual.text('🔨', creep.hostPos);
-            }else if(creep.host instanceof StructureController){
-                visual.text('🔧', creep.hostPos);
-            }
+        if(creep.host && creep.pos.isNearTo(creep.hostPos)){
+            visual.text('🔋', creep.hostPos);
         }
         if(creep.target && !creep.targetIs(creep.hostPos)){
-            visual.text('🔋', creep.target);
+            visual.text('🔌', creep.target);
         }
     }
 } as Role;

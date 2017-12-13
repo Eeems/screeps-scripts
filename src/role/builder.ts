@@ -80,7 +80,7 @@ export default {
             }
         }
         if(creep.target && !creep.targetIs(creep.hostPos)){
-            visual.text('🔋', creep.target);
+            visual.text('🔌', creep.target);
         }
     }
 } as Role;
