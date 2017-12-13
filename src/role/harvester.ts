@@ -61,15 +61,26 @@ function depositAtTarget(creep: CreepDevice): number{
 function harvestFromHost(creep: CreepDevice): number{
     if(!FS.open('/dev/source').open(creep.host.id).safe){
         const spawn = _.min(creep.room.spawns, (s: SpawnDevice) => creep.pos.getRangeTo(s));
-        if(!spawn){
-            return ERR_NO_PATH;
+        if(spawn){
+            return creep.travelTo(spawn.pos);
         }
-        return creep.travelTo(spawn.pos);
+        return ERR_NO_PATH;
     }else if(creep.isAt(creep.hostPos)){
         return creep.me.harvest(creep.host);
     }
-    console.log(`${creep.name} ${creep.pos} => ${creep.hostPos}`);
     return creep.travelTo(creep.hostPos);
+}
+
+function depositIfNear(creep: CreepDevice): void{
+    const structures = creep.pos.findInRange(FIND_STRUCTURES, 1, {
+        filter: (s) => ~([
+            STRUCTURE_SPAWN, STRUCTURE_STORAGE, STRUCTURE_EXTENSION, STRUCTURE_CONTAINER
+        ] as string[]).indexOf(s.structureType) && (s.energy || _.sum(s.store)) < (s.energyCapacity || s.storeCapacity)
+    }) as Structure[];
+    if(structures.length){
+        creep.target = structures[0];
+        creep.me.transfer(structures[0], RESOURCE_ENERGY);
+    }
 }
 
 function logCode(creep: CreepDevice, fn: (creep: CreepDevice) => number){
@@ -90,6 +101,7 @@ export default {
         if(creep.isFull){
             logCode(creep, depositAtTarget);
         }else{
+            depositIfNear(creep);
             logCode(creep, harvestFromHost);
         }
         const visual = creep.room.visual;

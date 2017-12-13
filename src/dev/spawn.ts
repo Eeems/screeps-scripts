@@ -118,6 +118,7 @@ export class SpawnDevice{
                 role: role.name,
                 host: host
             };
+            this.room.visual.text('➕ ' + name, this.pos);
         }
         return code;
     }
