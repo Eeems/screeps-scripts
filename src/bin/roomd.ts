@@ -78,8 +78,7 @@ function run(){
         sources.forEach((source: SourceDevice) => source.ensureHarvesters());
         if(availableSpawns.length){
             if(
-                !room.creepsWithRole('builder').length &&
-                room.queuedWithRole('builder').length < (hasContainers ? sources.length : 1)
+                room.creepsWithRole('builder').length + room.queuedWithRole('builder').length < (hasContainers ? sources.length : 1)
             ){
                 availableSpawns.pop().add('builder', room);
             }
