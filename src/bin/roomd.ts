@@ -27,10 +27,10 @@ function ensureBase(room: RoomDevice): void{
             room.sourceSpaces.filter(
                 (space: SourceSpace) => {
                     const pos = space.pos;
-                    return !_.union(
-                        pos.lookFor(LOOK_STRUCTURES),
-                        pos.lookFor(LOOK_CONSTRUCTION_SITES)
-                    ).filter((s: ConstructionSite) => s.structureType !== STRUCTURE_CONTAINER).length
+                    return !(
+                        pos.lookFor(LOOK_STRUCTURES).filter((s: Structure) => s.structureType !== STRUCTURE_CONTAINER).length +
+                        pos.lookFor(LOOK_CONSTRUCTION_SITES).length
+                    );
                 }
             ),
             limit
@@ -41,11 +41,11 @@ function ensureBase(room: RoomDevice): void{
         spaces.forEach((space: SourceSpace) => space.pos.createConstructionSite(STRUCTURE_CONTAINER));
     }
     if(buildRoads){
-        room.sources.forEach((source: SourceDevice) => {
-            const res = PathFinder.search(source.pos, {
+        _.union(room.sources, [room.controller]).forEach((item: SourceDevice | StructureController) => {
+            const res = PathFinder.search(item.pos, {
                 pos: _.min(
                     spawns.map((spawn: SpawnDevice) => spawn.pos),
-                    (pos: RoomPosition) => source.pos.getRangeTo(pos)
+                    (pos: RoomPosition) => item.pos.getRangeTo(pos)
                 ),
                 range: 1
             }, {
@@ -62,7 +62,7 @@ function ensureBase(room: RoomDevice): void{
                     )
                     .forEach((pos: RoomPosition) => pos.createConstructionSite(STRUCTURE_ROAD));
             }else{
-                console.log(`WARNING: ${source} unable to route to nearest spawn`);
+                console.log(`WARNING: unable to route to nearest spawn from ${item.pos}`);
             }
         })
     }
