@@ -42,14 +42,14 @@ export default {
     body: () => [MOVE,MOVE,MOVE,CARRY,CARRY,CARRY],
     name: 'courier',
     run: (creep: CreepDevice): void => {
-        if(!creep.host){
-            creep.me.suicide();
-        }else if(!creep.carry.energy){
-            logCode(creep, refuelFromTarget);
-        }else if(!creep.pos.isNearTo(creep.host)){
-            logIfErr(creep, 'travelTo', creep.travelTo(creep.hostPos));
-        }else if(creep.host.energy < creep.host.energyCapacity){
-            logIfErr(creep, 'transfer', creep.me.transfer(creep.host, RESOURCE_ENERGY));
+        if(creep.host){
+            if(!creep.carry.energy){
+                logCode(creep, refuelFromTarget);
+            }else if(!creep.pos.isNearTo(creep.host)){
+                logIfErr(creep, 'travelTo', creep.travelTo(creep.hostPos));
+            }else if(creep.host.energy < creep.host.energyCapacity){
+                logIfErr(creep, 'transfer', creep.me.transfer(creep.host, RESOURCE_ENERGY));
+            }
         }
         const visual = creep.room.visual;
         if(creep.host && creep.pos.isNearTo(creep.hostPos)){

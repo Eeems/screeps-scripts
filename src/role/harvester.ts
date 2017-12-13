@@ -10,7 +10,10 @@ function notFull(structures){
 }
 
 function getNextTarget(creep){
-    let targets = notFull(creep.room.energyStructures);
+    let targets = [];
+    if(!creep.room.creepsWithRole('courier').length){
+        targets = notFull(creep.room.energyStructures);
+    }
     if(!targets.length){
         targets = notFull(creep.room.storageStructures);
     }

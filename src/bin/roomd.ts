@@ -15,31 +15,30 @@ function setup(){
 function ensureBase(room: RoomDevice): void{
     const containers = room.containers as StructureContainer[],
         spawns = room.spawns as SpawnDevice[],
-        limit = C.BUILDING_LIMITS.CONTAINERS - containers.length;
+        limit = C.BUILDING_LIMITS.CONTAINERS - _.union(
+            containers,
+            room.me.find(FIND_CONSTRUCTION_SITES, {
+                filter: (s: ConstructionSite) => s.structureType === STRUCTURE_CONTAINER
+            })
+        ).length;
     let buildRoads = false;
     if(limit){
-        let spaces = room.sourceSpaces || [];
-        if(spaces.length > limit){
-            spaces = _.take(
-                _.sortBy(
-                    spaces,
-                    (space: SourceSpace) => _.min(
-                        spawns,
-                        (spawn: SpawnDevice) => space.pos.getRangeTo(spawn.pos)
-                    )
-                ),
-                limit
-            );
-        }else{
+        const spaces = _.take(
+            room.sourceSpaces.filter(
+                (space: SourceSpace) => {
+                    const pos = space.pos;
+                    return !_.union(
+                        pos.lookFor(LOOK_STRUCTURES),
+                        pos.lookFor(LOOK_CONSTRUCTION_SITES)
+                    ).filter((s: ConstructionSite) => s.structureType !== STRUCTURE_CONTAINER).length
+                }
+            ),
+            limit
+        );
+        if(spaces.length){
             buildRoads = true;
         }
-        spaces.filter(
-            (space: SourceSpace) => {
-                return !space.pos.lookFor(LOOK_STRUCTURES)
-                    .filter((s: Structure) => s.structureType !== STRUCTURE_CONTAINER)
-                    .length
-            }
-        ).forEach((space: SourceSpace) => space.pos.createConstructionSite(STRUCTURE_CONTAINER));
+        spaces.forEach((space: SourceSpace) => space.pos.createConstructionSite(STRUCTURE_CONTAINER));
     }
     if(buildRoads){
         room.sources.forEach((source: SourceDevice) => {
