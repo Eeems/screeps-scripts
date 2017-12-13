@@ -275,7 +275,11 @@ export class CreepDevice{
             }
         }
         this.memory.lastPos = pos;
-        return this.me.move(this.pos.getDirectionTo(pos));
+        const code = this.me.move(this.pos.getDirectionTo(pos));
+        if(code !== OK){
+            delete this.memory.lastPos;
+        }
+        return code;
     }
     public isAt(pos: RoomPosition): boolean{
         return equalPos(this.pos, pos);
