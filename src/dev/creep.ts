@@ -242,6 +242,9 @@ export class CreepDevice{
                 }
             }
         }
+        if(this.fatigue){
+            return ERR_TIRED;
+        }
         if(lastPos && equalPos(lastPos, pos)){
             this.path = this.getPathTo(target, 0, true);
             pos = this.nextPos;
@@ -275,11 +278,7 @@ export class CreepDevice{
             }
         }
         this.memory.lastPos = pos;
-        const code = this.me.move(this.pos.getDirectionTo(pos));
-        if(code !== OK){
-            delete this.memory.lastPos;
-        }
-        return code;
+        return this.me.move(this.pos.getDirectionTo(pos));
     }
     public isAt(pos: RoomPosition): boolean{
         return equalPos(this.pos, pos);
