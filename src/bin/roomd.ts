@@ -23,22 +23,34 @@ function ensureBase(room: RoomDevice): void{
         ).length;
     let buildRoads = false;
     if(limit){
-        const spaces = _.take(
-            room.sourceSpaces.filter(
-                (space: SourceSpace) => {
-                    const pos = space.pos;
-                    return !(
-                        pos.lookFor(LOOK_STRUCTURES).filter((s: Structure) => s.structureType !== STRUCTURE_CONTAINER).length +
-                        pos.lookFor(LOOK_CONSTRUCTION_SITES).length
-                    );
+        const sources = _.take(
+            room.sources.filter(
+                (source: SourceDevice) => {
+                    return !source.spaces.filter((space: SourceSpace) => {
+                        const pos = space.pos;
+                        return (
+                            pos.lookFor(LOOK_STRUCTURES).filter((s: Structure) => s.structureType === STRUCTURE_CONTAINER).length +
+                            pos.lookFor(LOOK_CONSTRUCTION_SITES).filter((s: ConstructionSite) => s.structureType === STRUCTURE_CONTAINER).length
+                        );
+                    }).length;
                 }
             ),
             limit
         );
-        if(spaces.length){
+        if(sources.length){
             buildRoads = true;
         }
-        spaces.forEach((space: SourceSpace) => space.pos.createConstructionSite(STRUCTURE_CONTAINER));
+        sources.forEach((source: SourceDevice) => {
+            const space = _.min(
+                source.spaces,
+                (space: SourceSpace) => _.min(
+                    spawns.map(
+                        (spawn: SpawnDevice) => spawn.pos.getRangeTo(source.pos)
+                    )
+                )
+            );
+            space.pos.createConstructionSite(STRUCTURE_CONTAINER)
+        });
     }
     if(buildRoads){
         _.union(room.sources, [room.controller]).forEach((item: SourceDevice | StructureController) => {
