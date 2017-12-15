@@ -22,5 +22,6 @@ export function loop(){
         if(!e.stack){
             console.log('  Stack:\n' + (new Error()).stack);
         }
+        Kernel.setup();
     }
 }

@@ -1,18 +1,21 @@
+/* tslint:disable:no-var-requires */
 import * as Config from "webpack-chain";
 
 import * as CommonConfig from "./config.common";
-import { EnvOptions } from "./types";
+import { Credentials, EnvOptions } from "./types";
+const ScreepsWebpackPlugin = require("../libs/screeps-webpack-plugin");
 
 function webpackConfig(options: EnvOptions = {}): Config {
   // get the common configuration to start with
   const config = CommonConfig.init(options);
 
-  // TIP: if you symlink the below path into your project as `local`,
-  // it makes for much easier debugging:
-  // (make sure you symlink the dir, not the files)
-  // `# ln -s /path/to/local/deploy/dir ./dist/local`
-  const localPath = "C:\\Users\\Eeems\\AppData\\Local\\Screeps\\scripts\\screeps.com\\dev";
-  config.output.path(localPath);
+  // make "dev" specific changes here
+  const credentials: Credentials = require("./credentials.json");
+  credentials.branch = "dev";
+  credentials.serverUrl = "https://screeps.com/ptr";
+
+  config.plugin("screeps")
+    .use(ScreepsWebpackPlugin, [credentials]);
 
   // modify the args of "define" plugin
   config.plugin("define").tap((args: any[]) => {
@@ -20,9 +23,6 @@ function webpackConfig(options: EnvOptions = {}): Config {
     args[0].__PROFILER_ENABLED__ = JSON.stringify(true);
     return args;
   });
-
-  // HACK to add .js extension for local server
-  config.output.sourceMapFilename("[file].map.js");
 
   return config;
 }
