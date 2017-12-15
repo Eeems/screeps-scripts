@@ -7,7 +7,7 @@ import {default as RoomDevice} from '../dev/room';
 const creeps = {};
 
 function equalPos(pos0: RoomPosition, pos1: RoomPosition): boolean{
-    return pos0 && pos1 && pos0.roomName === pos1.roomName && pos0.x === pos1.x && pos0.y === pos1.y;
+    return pos0 && pos1 && pos0.isEqualTo(pos1);
 }
 
 export class CreepDevice{
