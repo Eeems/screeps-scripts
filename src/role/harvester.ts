@@ -103,18 +103,22 @@ export default {
     body: () => [MOVE, MOVE, CARRY, CARRY, WORK],
     name: 'harvester',
     run: (creep: CreepDevice): void => {
-        if(creep.isFull){
-            logCode(creep, depositAtTarget);
-        }else{
-            depositIfNear(creep);
-            logCode(creep, harvestFromHost);
-        }
-        const visual = creep.room.visual;
         if(creep.host){
-            visual.text('⛏', creep.hostPos);
-        }
-        if(creep.target && creep.carry.energy && !creep.targetIs(creep.hostPos)){
-            visual.text('🔋', creep.target);
+            if(creep.isFull){
+                logCode(creep, depositAtTarget);
+            }else{
+                depositIfNear(creep);
+                logCode(creep, harvestFromHost);
+            }
+            const visual = creep.room.visual;
+            if(creep.host){
+                visual.text('⛏', creep.hostPos);
+            }
+            if(creep.target && creep.carry.energy && !creep.targetIs(creep.hostPos)){
+                visual.text('🔋', creep.target);
+            }
+        }else{
+            creep.me.suicide();
         }
     }
 } as Role;
