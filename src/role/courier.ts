@@ -39,7 +39,7 @@ function logCode(creep: CreepDevice, fn: (creep: CreepDevice) => number){
 function logIfErr(creep, name, code){
     if(!~([OK, ERR_TIRED, ERR_BUSY] as number[]).indexOf(code)){
         const msg = C.ERROR_MESSAGES[code] || `${code}`;
-        console.log(`Creep#${creep.name}: ${msg}`);
+        console.log(`${creep.me}: ${msg}`);
         console.log(`  Action: ${name}`);
         console.log(`  Host:   ${creep.host}`);
         console.log(`  Target: ${creep.target}`);

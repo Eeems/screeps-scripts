@@ -13,15 +13,15 @@ function setup(){
 }
 
 function ensureBase(room: RoomDevice): void{
+    let containersToBuild = room.me.find(FIND_CONSTRUCTION_SITES, {
+        filter: (s: ConstructionSite) => s.structureType === STRUCTURE_CONTAINER
+    });
     const containers = room.containers as StructureContainer[],
         spawns = room.spawns as SpawnDevice[],
         limit = C.BUILDING_LIMITS.CONTAINERS - _.union(
             containers,
-            room.me.find(FIND_CONSTRUCTION_SITES, {
-                filter: (s: ConstructionSite) => s.structureType === STRUCTURE_CONTAINER
-            })
+            containersToBuild
         ).length;
-    let buildRoads = false;
     if(limit){
         const sources = _.take(
             room.sources.filter(
@@ -37,9 +37,6 @@ function ensureBase(room: RoomDevice): void{
             ),
             limit
         );
-        if(sources.length){
-            buildRoads = true;
-        }
         sources.forEach((source: SourceDevice) => {
             const space = _.min(
                 source.spaces,
@@ -49,14 +46,21 @@ function ensureBase(room: RoomDevice): void{
                     )
                 )
             );
-            space.pos.createConstructionSite(STRUCTURE_CONTAINER)
+            space.pos.createConstructionSite(STRUCTURE_CONTAINER);
+        });
+        containersToBuild = room.me.find(FIND_CONSTRUCTION_SITES, {
+            filter: (s: ConstructionSite) => s.structureType === STRUCTURE_CONTAINER
         });
     }
-    if(buildRoads){
+    if(!containersToBuild.length){
         _.union(room.sources, [room.controller]).forEach((item: SourceDevice | StructureController) => {
             const res = PathFinder.search(item.pos, {
                 pos: _.min(
-                    spawns.map((spawn: SpawnDevice) => spawn.pos),
+                    item instanceof StructureController
+                        ? item.pos.findClosestByPath(FIND_STRUCTURES, {
+                            filter: (s: Structure) => s.structureType === STRUCTURE_CONTAINER
+                        })
+                        : spawns.map((spawn: SpawnDevice) => spawn.pos),
                     (pos: RoomPosition) => item.pos.getRangeTo(pos)
                 ),
                 range: 1
@@ -74,7 +78,7 @@ function ensureBase(room: RoomDevice): void{
                     )
                     .forEach((pos: RoomPosition) => pos.createConstructionSite(STRUCTURE_ROAD));
             }else{
-                console.log(`WARNING: unable to route to nearest spawn from ${item.pos}`);
+                console.log(`WARNING: unable to route road for ${item}`);
             }
         })
     }

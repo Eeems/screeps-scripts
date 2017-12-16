@@ -36,24 +36,30 @@ function storageStructureAt(pos: RoomPosition): Structure{
     }
 }
 function depositAtTarget(creep: CreepDevice): number{
-    if(!creep.target || creep.targetIs(creep.hostPos)){
+    if(!creep.target || creep.targetIs(creep.hostPos) || creep.targetIs(creep.host.pos)){
         creep.target = getNextTarget(creep);
     }
     if(!creep.target){
-        return creep.travelTo(creep.target);
+        return creep.travelTo(creep.hostPos);
     }
     if(!creep.pos.isNearTo(creep.target)){
         return creep.travelTo(creep.target);
     }
     const structure = storageStructureAt(creep.target);
     if(!structure){
-        return ERR_INVALID_TARGET;
+        const target = getNextTarget(creep);
+        if(target){
+            creep.target = target;
+            return depositAtTarget(creep);
+        }
+        return creep.travelTo(creep.hostPos);
     }
     const code = creep.me.transfer(structure, RESOURCE_ENERGY);
     switch(code){
         case ERR_NOT_IN_RANGE:
             return creep.travelTo(creep.target);
         case ERR_FULL:
+        case ERR_INVALID_TARGET:
             const target = getNextTarget(creep);
             if(target){
                 creep.target = target;
@@ -94,7 +100,7 @@ function logCode(creep: CreepDevice, fn: (creep: CreepDevice) => number){
     const code = fn(creep);
     if(!~([OK, ERR_TIRED, ERR_BUSY] as number[]).indexOf(code)){
         const msg = C.ERROR_MESSAGES[code] || `${code}`;
-        console.log(`Creep#${creep.name}: ${msg}`);
+        console.log(`${creep.me}: ${msg}`);
         console.log(`  Action: ${fn.name}`);
         console.log(`  Host:   ${creep.host}`);
         console.log(`  Target: ${creep.target}`);

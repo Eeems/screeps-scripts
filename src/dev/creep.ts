@@ -221,14 +221,16 @@ export class CreepDevice{
     }
     public travelTo(target: RoomPosition): number{
         if(this.isAt(target)){
+            this.memory.lastPos = target;
             return OK;
         }
         if(!equalPos(this.target, target)){
+            console.log(`${this.me} -> ${target}`);
             this.target = target;
             this.path = this.getPathTo(target);
-            delete this.memory.lastPos;
         }
         let pos = this.nextPos;
+        const lastPos = this.toRoomPosition(this.memory.lastPos);
         if(!this.validNextPos(pos)){
             this.path = this.getPathTo(target);
             pos = this.nextPos;
@@ -236,21 +238,19 @@ export class CreepDevice{
                 this.path = this.getPathTo(target, 1);
                 pos = this.nextPos;
                 if(!this.validNextPos(pos)){
-                    delete this.memory.lastPos;
                     return ERR_NO_PATH;
                 }
             }
+            this.memory.lastPos = pos;
         }
         if(this.fatigue){
             delete this.memory.lastPos;
             this.drawPath(pos);
             return ERR_TIRED;
         }else if(!this.me.getActiveBodyparts(MOVE)){
-            delete this.memory.lastPos;
             this.drawPath(pos);
             return ERR_NO_BODYPART;
         }
-        const lastPos = this.memory.lastPos;
         if(equalPos(lastPos, pos)){
             this.path = this.getPathTo(target, 0, true);
             pos = this.nextPos;
@@ -258,13 +258,15 @@ export class CreepDevice{
                 this.path = this.getPathTo(target, 1, true);
                 pos = this.nextPos;
                 if(!this.validNextPos(pos)){
-                    delete this.memory.lastPos;
                     return ERR_NO_PATH;
                 }
             }
+            this.memory.lastPos = pos;
         }
         this.drawPath(pos);
-        this.memory.lastPos = pos;
+        if(lastPos){
+            console.log(`${this.me} ${lastPos} => ${pos}`);
+        }
         return this.me.move(this.pos.getDirectionTo(pos));
     }
     public isAt(pos: RoomPosition): boolean{
@@ -272,6 +274,11 @@ export class CreepDevice{
     }
     public targetIs(pos: RoomPosition): boolean{
         return equalPos(this.target, pos);
+    }
+    private toRoomPosition(pos: {x: number, y: number, roomName: string}){
+        if(pos){
+            return new RoomPosition(pos.x, pos.y, pos.roomName);
+        }
     }
     private drawPath(pos: RoomPosition): void{
         if(pos){

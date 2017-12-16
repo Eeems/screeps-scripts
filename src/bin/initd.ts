@@ -13,7 +13,7 @@ function ensureProcess(priority: Priority, imageName: string, args: string[] = [
 
 function interrupt(): void{
     const ensure = ensureProcess.bind(this);
-    ensure(Priority.Always, '/bin/profiled');
+    // ensure(Priority.Always, '/bin/profiled');
     _.each(_.keys(Game.rooms), (room) => ensure(Priority.Always, '/bin/roomd', [room]));
     _.each(_.keys(Game.creeps), (creep) => ensure(Priority.AlwaysLast, '/bin/creep', [creep]));
 }

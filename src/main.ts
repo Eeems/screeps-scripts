@@ -10,9 +10,11 @@ global.FS = FS;
 global.C = C;
 global.memory = memory;
 
+console.log('SETUP');
 Kernel.setup();
 
 export function loop(){
+    console.log('START OF TICK');
     try{
         Kernel.init();
         Kernel.run();
@@ -24,4 +26,5 @@ export function loop(){
         }
         Kernel.setup();
     }
+    console.log('END OF TICK');
 }
