@@ -20,7 +20,15 @@ function refuelFromTarget(creep: CreepDevice): number{
                 .lookFor(LOOK_STRUCTURES)
                 .filter((s: Structure) => ~([STRUCTURE_EXTENSION, STRUCTURE_SPAWN, STRUCTURE_STORAGE, STRUCTURE_CONTAINER] as string[]).indexOf(s.structureType))
         ) as Structure;
-        return structure ? creep.me.withdraw(structure, RESOURCE_ENERGY) : ERR_NO_PATH;
+        if(structure){
+            const code = creep.me.withdraw(structure, RESOURCE_ENERGY);
+            if(code === ERR_NOT_ENOUGH_RESOURCES){
+                delete creep.memory.target;
+                creep.travelTo(creep.hostPos);
+            }
+            return code;
+        }
+        return ERR_NO_PATH;
     }
     return creep.travelTo(creep.target);
 }

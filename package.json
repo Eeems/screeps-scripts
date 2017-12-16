@@ -7,6 +7,8 @@
     "start": "webpack --colors --watch",
     "local": "webpack --colors --env.ENV=local",
     "watch-local": "webpack --colors --watch --env.ENV=local",
+    "ptr": "webpack --colors --env.ENV=ptr",
+    "watch-ptr": "webpack --colors --watch --env.ENV=ptr",
     "test": "echo \"Error: no test specified\" && exit 1",
     "typings": "typings"
   },

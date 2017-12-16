@@ -23,6 +23,7 @@ function getNextTarget(creep){
             (pos: RoomPosition) => creep.pos.getRangeTo(pos)
         );
     }
+    return null;
 }
 function storageStructureAt(pos: RoomPosition): Structure{
     if(pos && pos.look){
@@ -36,10 +37,10 @@ function storageStructureAt(pos: RoomPosition): Structure{
 }
 function depositAtTarget(creep: CreepDevice): number{
     if(!creep.target || creep.targetIs(creep.hostPos)){
-        creep.target = getNextTarget(creep) || creep.hostPos;
+        creep.target = getNextTarget(creep);
     }
     if(!creep.target){
-        return creep.travelTo(creep.hostPos);
+        return creep.travelTo(creep.target);
     }
     if(!creep.pos.isNearTo(creep.target)){
         return creep.travelTo(creep.target);
@@ -56,8 +57,9 @@ function depositAtTarget(creep: CreepDevice): number{
             const target = getNextTarget(creep);
             if(target){
                 creep.target = target;
+                return depositAtTarget(creep);
             }
-            return target ? depositAtTarget(creep) : creep.travelTo(creep.hostPos);
+            return creep.travelTo(creep.hostPos);
     }
     return code;
 }
@@ -114,7 +116,7 @@ export default {
             if(creep.host){
                 visual.text('⛏', creep.hostPos);
             }
-            if(creep.target && creep.carry.energy && !creep.targetIs(creep.hostPos)){
+            if(creep.target && creep.carry.energy && !creep.targetIs(creep.hostPos) && !creep.targetIs(creep.host.pos)){
                 visual.text('🔋', creep.target);
             }
         }else{

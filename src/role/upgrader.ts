@@ -1,6 +1,7 @@
 import {CreepDevice} from '../dev/creep';
 import {default as C} from '../kernel/constants';
 import {default as Role} from '../kernel/role';
+import * as SYSCALL from '../kernel/syscall';
 
 function getEnergy(creep: CreepDevice): number{
     if(!creep.target || creep.targetIs(creep.hostPos)){
@@ -21,6 +22,10 @@ function getEnergy(creep: CreepDevice): number{
         }
     }
     if(!creep.target){
+        if(!creep.pos.inRangeTo(creep.hostPos, 3)){
+            return creep.travelTo(creep.hostPos);
+        }
+        SYSCALL.sleep(3);
         return ERR_NO_PATH;
     }else if(creep.pos.isNearTo(creep.target)){
         const structure = _.first(

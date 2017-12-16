@@ -2,19 +2,22 @@ import {CreepDevice} from '../dev/creep';
 import {default as C} from '../kernel/constants';
 import {default as Role} from '../kernel/role';
 
-const VALID_TARGET = [STRUCTURE_EXTENSION, STRUCTURE_SPAWN, STRUCTURE_STORAGE, STRUCTURE_CONTAINER] as string[];
+const VALID_TARGET = [STRUCTURE_EXTENSION, STRUCTURE_SPAWN, STRUCTURE_STORAGE, STRUCTURE_CONTAINER] as string[],
+    VALID_TARGET_WITH_COURIER = [STRUCTURE_STORAGE, STRUCTURE_CONTAINER] as string[];
 
 function refuelFromTarget(creep: CreepDevice): number{
+    const courier = creep.room.creepsWithRole('courier').length;
     if(
         !creep.target ||
         creep.targetIs(creep.hostPos) ||
         creep.targetIs(creep.room.controller.pos) ||
         !creep.target
             .lookFor(LOOK_STRUCTURES)
-            .filter((s: Structure) => ~VALID_TARGET.indexOf(s.structureType)).length
+            .filter((s: Structure) => ~(courier ? VALID_TARGET_WITH_COURIER : VALID_TARGET).indexOf(s.structureType))
+            .length
     ){
-        let targets = creep.room.storageStructures.filter((s: {store: any}) => _.sum(s.store));
-        if(!targets.length){
+        let targets = creep.room.storageStructures.filter((s: {store: any}) => s.store.energy);
+        if(!targets.length && !courier){
             targets = creep.room.energyStructures.filter((s: {energy: number}) => s.energy);
         }
         if(targets.length){
@@ -25,14 +28,21 @@ function refuelFromTarget(creep: CreepDevice): number{
         }
     }
     if(!creep.target){
-        return ERR_NO_PATH;
+        return creep.travelTo(creep.hostPos);
     }else if(creep.pos.isNearTo(creep.target)){
         const structure = _.first(
             creep.target
                 .lookFor(LOOK_STRUCTURES)
                 .filter((s: Structure) => ~VALID_TARGET.indexOf(s.structureType))
         ) as Structure;
-        return structure ? creep.me.withdraw(structure, RESOURCE_ENERGY) : ERR_NO_PATH;
+        if(structure){
+            const code = creep.me.withdraw(structure, RESOURCE_ENERGY);
+            if(code === ERR_NOT_ENOUGH_RESOURCES){
+                delete creep.memory.target;
+            }
+            return code;
+        }
+        return ERR_NO_PATH;
     }
     return creep.travelTo(creep.target);
 }

@@ -228,8 +228,7 @@ export class CreepDevice{
             this.path = this.getPathTo(target);
             delete this.memory.lastPos;
         }
-        let pos = this.nextPos,
-            lastPos = this.memory.lastPos;
+        let pos = this.nextPos;
         if(!this.validNextPos(pos)){
             this.path = this.getPathTo(target);
             pos = this.nextPos;
@@ -243,15 +242,19 @@ export class CreepDevice{
             }
         }
         if(this.fatigue){
+            delete this.memory.lastPos;
+            this.drawPath(pos);
             return ERR_TIRED;
-        }
-        if(!this.me.getActiveBodyparts(MOVE)){
+        }else if(!this.me.getActiveBodyparts(MOVE)){
+            delete this.memory.lastPos;
+            this.drawPath(pos);
             return ERR_NO_BODYPART;
         }
-        if(lastPos && equalPos(lastPos, pos)){
+        const lastPos = this.memory.lastPos;
+        if(equalPos(lastPos, pos)){
             this.path = this.getPathTo(target, 0, true);
             pos = this.nextPos;
-            if(!this.validNextPos(pos) || (lastPos && equalPos(lastPos, pos))){
+            if(!this.validNextPos(pos) || equalPos(lastPos, pos)){
                 this.path = this.getPathTo(target, 1, true);
                 pos = this.nextPos;
                 if(!this.validNextPos(pos)){
@@ -260,26 +263,7 @@ export class CreepDevice{
                 }
             }
         }
-        const room = this.room,
-            visual = room.visual,
-            style = {
-                color: '#ffffff',
-                lineStyle: 'dashed',
-                opacity: 0.5,
-                width: 0.1
-            };
-        if(pos.roomName === room.name){
-            visual.line(this.pos, pos, style);
-            if(this.path.length){
-                lastPos = pos;
-                this.path
-                    .filter((pos) => pos.roomName === room.name)
-                    .forEach((pos) => {
-                        visual.line(lastPos, pos, style);
-                        lastPos = pos;
-                    });
-            }
-        }
+        this.drawPath(pos);
         this.memory.lastPos = pos;
         return this.me.move(this.pos.getDirectionTo(pos));
     }
@@ -288,6 +272,30 @@ export class CreepDevice{
     }
     public targetIs(pos: RoomPosition): boolean{
         return equalPos(this.target, pos);
+    }
+    private drawPath(pos: RoomPosition): void{
+        if(pos){
+            const room = this.room,
+                visual = room.visual,
+                style = {
+                    color: '#ffffff',
+                    lineStyle: 'dashed',
+                    opacity: 0.5,
+                    width: 0.1
+                };
+            if(pos.roomName === room.name){
+                visual.line(this.pos, pos, style);
+                if(this.path.length){
+                    let lastPos = pos;
+                    this.path
+                        .filter((pos) => pos.roomName === room.name)
+                        .forEach((pos) => {
+                            visual.line(lastPos, pos, style);
+                            lastPos = pos;
+                        });
+                }
+            }
+        }
     }
     private validNextPos(pos: RoomPosition){
         return pos && this.pos.isNearTo(pos);
