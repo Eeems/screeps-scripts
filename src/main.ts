@@ -1,30 +1,21 @@
-import {FS} from './kernel/fs';
-import * as Kernel from './kernel/kernel';
-import { default as  memory } from './kernel/memory';
-import './plugins/LoAN.injecT';
-import './plugins/toString.link';
-import C from './kernel/constants';
+import './plugins/';
+import './prototypes/';
+import {Kernel} from './kernel';
+import {Log} from './log';
 
-global.Kernel = Kernel;
-global.FS = FS;
-global.C = C;
-global.memory = memory;
-
-console.log('SETUP');
 Kernel.setup();
 
 export function loop(){
-    console.log('START OF TICK');
+    Log.reset();
+    Log.info('Tick ' + Game.time);
+    Log.group();
     try{
         Kernel.init();
         Kernel.run();
         Kernel.deinit();
     }catch(e){
-        console.log(`PANIC: ${e}`);
-        if(!e.stack){
-            console.log('  Stack:\n' + (new Error()).stack);
-        }
+        Log.panic(`${e}${e.stack ? '' : '\n' + (new Error()).stack}`);
         Kernel.setup();
     }
-    console.log('END OF TICK');
+    Log.ungroup();
 }
