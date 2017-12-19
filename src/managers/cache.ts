@@ -1,3 +1,5 @@
+import * as uuid from 'uuid/v1';
+
 export class CacheManager{
     public static tick: number;
     public static structures: {[roomName: string]: {[structureType: string]: Structure[]}};
@@ -8,11 +10,18 @@ export class CacheManager{
         this.init();
     }
     public static init(){
+        if(!global.uuid){
+            global.uuid = uuid();
+            if(!Memory.uuids){
+                Memory.uuids = {};
+            }
+        }
         if(Game.time !== this.tick){
             this.tick = Game.time;
             this.structures = {};
             this.friendlies = {};
             this.hostiles = {};
+            Memory.uuids[global.uuid] = Game.time;
         }
     }
 }

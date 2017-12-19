@@ -7,6 +7,7 @@ declare namespace NodeJS {
         log: any;
         Memory: any;
         Kernel: any;
+        uuid: string;
     }
 }
 
