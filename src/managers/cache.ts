@@ -5,6 +5,8 @@ export class CacheManager{
     public static structures: {[roomName: string]: {[structureType: string]: Structure[]}};
     public static friendlies: {[roomName: string]: {[structureType: string]: Creep[]}};
     public static hostiles: {[roomName: string]: {[structureType: string]: Creep[]}};
+    public static fleeObjects: {[roomName: string]: RoomObject[]};
+    public static lairThreats: {[roomName: string]: StructureKeeperLair[]};
 
     public static setup(){
         this.init();
@@ -21,6 +23,8 @@ export class CacheManager{
             this.structures = {};
             this.friendlies = {};
             this.hostiles = {};
+            this.fleeObjects = {};
+            this.lairThreats = {};
             Memory.uuids[global.uuid] = Game.time;
         }
     }

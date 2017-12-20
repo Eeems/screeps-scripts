@@ -74,3 +74,13 @@ interface Creep {
 
 type Coord = {x: number, y: number};
 type HasPos = {pos: RoomPosition}
+
+interface RoomPosition {
+    isNearExit(range: number): boolean;
+    openAdjacentSpots(ignoreCreeps?: boolean): RoomPosition[];
+    getPositionAtDirection(direction: number, range?: number): RoomPosition;
+    isPassible(ignoreCreeps?: boolean): boolean;
+    lookForStructure(structureType: string): Structure;
+    getRangeToClosest(positions:{pos: RoomPosition}[] | RoomPosition[]): number;
+    terrainCost(): number;
+}
