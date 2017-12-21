@@ -3,7 +3,7 @@ import * as Managers from '../managers/';
 const cache = Managers.cache;
 
 // Object.defineProperty(Room.prototype, 'friendlies',{
-//     get: function myProperty(){
+//     get: function(){
 //         if(!cache.friendlies[this.name]){
 //             cache.friendlies[this.name] = _.filter(
 //                 this.find(FIND_MY_CREEPS) as Creep[],
@@ -16,7 +16,7 @@ const cache = Managers.cache;
 // });
 
 // Object.defineProperty(Room.prototype, 'hostiles',{
-//     get: function myProperty(){
+//     get: function(){
 //         if(!cache.hostiles[this.name]){
 //             let hostiles = this.find(FIND_HOSTILE_CREEPS) as Creep[],
 //                 filteredHostiles = [];
@@ -34,7 +34,7 @@ const cache = Managers.cache;
 // })
 
 Object.defineProperty(Room.prototype, 'structures',{
-    get: function myProperty(){
+    get: function(){
         if(!cache.structures[this.name]){
             cache.structures[this.name] = _.groupBy(
                 this.find(FIND_STRUCTURES),
@@ -57,7 +57,7 @@ Room.prototype.findStructures = function<T extends Structure>(structureType: str
 };
 
 // Object.defineProperty(Room.prototype, 'fleeObjects',{
-//     get: function myProperty(){
+//     get: function(){
 //         if(!cache.fleeObjects[this.name]){
 //             let fleeObjects = _.filter(this.hostiles, (c: Creep): boolean =>{
 //                 if(c instanceof Creep){
@@ -79,7 +79,7 @@ Room.prototype.findStructures = function<T extends Structure>(structureType: str
 // });
 
 Object.defineProperty(Room.prototype, 'lairThreats',{
-    get: function myProperty(){
+    get: function(){
         if(!cache.lairThreats[this.name]){
             cache.lairThreats[this.name] = _.filter(
                 this.findStructures(STRUCTURE_KEEPER_LAIR),
