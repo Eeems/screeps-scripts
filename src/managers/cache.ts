@@ -25,7 +25,22 @@ export class CacheManager{
             this.hostiles = {};
             this.fleeObjects = {};
             this.lairThreats = {};
-            Memory.uuids[global.uuid] = Game.time;
+            if(!Memory.uuids[global.uuid]){
+                Memory.uuids[global.uuid] = {
+                    first: Game.time,
+                    ticks: 0
+                };
+            }
+            Memory.uuids[global.uuid].ticks++;
+            Memory.uuids[global.uuid].last = Game.time;
+            this.clean();
+        }
+    }
+    public static clean(){
+        for(var uuid of _.keys(Memory.uuids)){
+            if(Game.time - Memory.uuids[uuid].last > 120){
+                delete Memory.uuids[uuid];
+            }
         }
     }
 }
