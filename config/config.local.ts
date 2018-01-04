@@ -2,6 +2,7 @@ import * as Config from "webpack-chain";
 
 import * as CommonConfig from "./config.common";
 import { EnvOptions } from "./types";
+import {existsSync} from 'fs';
 
 function webpackConfig(options: EnvOptions = {}): Config {
   // get the common configuration to start with
@@ -11,8 +12,12 @@ function webpackConfig(options: EnvOptions = {}): Config {
   // it makes for much easier debugging:
   // (make sure you symlink the dir, not the files)
   // `# ln -s /path/to/local/deploy/dir ./dist/local`
-  const localPath = "C:\\Users\\Eeems\\AppData\\Local\\Screeps\\scripts\\127_0_0_1___21025\\default";
-  config.output.path(localPath);
+  let localPath = "C:\\Users\\Eeems";
+  if(!existsSync(localPath)){
+    localPath = "C:\\Users\\Nathaniel";
+  }
+
+  config.output.path(localPath + '\\AppData\\Local\\Screeps\\scripts\\127_0_0_1___21025\\default');
 
   // modify the args of "define" plugin
   config.plugin("define").tap((args: any[]) => {
