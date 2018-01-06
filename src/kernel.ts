@@ -1,10 +1,11 @@
 import {Log} from './log';
-import {cache, memory} from './managers/';
+import {cache, memory, compression} from './managers/';
 
 export class Kernel{
     public static managers = {
         cache,
-        memory
+        memory,
+        compression
     };
     public static setup(){
         if(!global.Kernel){
