@@ -2,6 +2,7 @@ import * as path from "path";
 import * as webpack from "webpack";
 import * as Config from "webpack-chain";
 import { ScreepsSourceMapToJson } from "../libs/screeps-webpack-sources";
+import {BundleAnalyzerPlugin} from 'webpack-bundle-analyzer';
 
 // Plugins:
 // disable tslint rule, because we don't have types for these files
@@ -106,6 +107,11 @@ export function init(options: EnvOptions): Config {
 
   config.plugin("no-emit-on-errors")
     .use(webpack.NoEmitOnErrorsPlugin);
+
+  config.plugin("webpack-bundle-analyzer")
+    .use(BundleAnalyzerPlugin,[{
+      analyzerMode: 'static'
+    }]);
 
   /////////
   /// Modules
