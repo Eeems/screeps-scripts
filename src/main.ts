@@ -14,7 +14,8 @@ export function loop(){
         Kernel.run();
         Kernel.deinit();
     }catch(e){
-        Log.panic(`${e}${e.stack ? '' : '\n' + (new Error()).stack}`);
+        const stack = e.stack || (new Error()).stack;
+        Log.panic(`${e}${stack}`);
         Kernel.setup();
     }
     Log.ungroup();

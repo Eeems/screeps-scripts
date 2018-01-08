@@ -1,6 +1,7 @@
 import {Log} from '../log';
 import * as config from '../config';
 import {CompressionManager as compression} from './compression';
+import * as DeepProxy from 'proxy-deep';
 
 const shards = [
     'shard0',
@@ -24,11 +25,37 @@ const EmptyMemory = {
 };
 
 export class MemoryManager{
+    private static _shared = new DeepProxy(SharedMem, {
+        get(target, property, receiver){
+            const val = Reflect.get(target, property, receiver);
+            if(typeof val === 'object' && val !== null){
+                return this.nest();
+            }else{
+                return val;
+            }
+        },
+        set(target, property, value, receiver){
+            Mem.interShardMutations.push(['s', this.path, value]);
+            target[property] = value;
+            return true;
+        },
+        deleteProperty(target, property){
+            const success = delete target[property];
+            success && Mem.interShardMutations.push(['d', this.path]);
+            return success;
+        }
+    });
+    public static get mem(): any{
+        return Mem;
+    }
     public static get segments(): {[id: string]: any}{
         return Mem.segments;
     }
     public static get active(): number[]{
         return Mem.activeSegments;
+    }
+    public static get shared(): any{
+        return this._shared;
     }
     public static setup(){
         Log.debug('Memory setup');
@@ -89,18 +116,6 @@ export class MemoryManager{
         }
         return false;
     }
-    public static interShardSet(prop: string | number, value: any){
-        Mem.interShardMutations.push(['s', prop, value]);
-    }
-    public static interShardDelete(prop: string | number){
-        Mem.interShardMutations.push(['d', prop]);
-    }
-    public static interShardGet(prop: string | number){
-        return SharedMem[prop];
-    }
-    public static interShardHas(prop: string | number){
-        return prop in SharedMem;
-    }
     private static loadCompressed(){
         try{
             Mem = this.toJSON();
@@ -114,13 +129,28 @@ export class MemoryManager{
         Memory.compressed = this.toString();
     }
     private static loadInterShard(){
-        SharedMem = JSON.parse(RawMemory.interShardSegment);
+        try{
+            SharedMem = JSON.parse(RawMemory.interShardSegment);
+        }catch(e){
+            Log.error(e);
+            Log.panic('Failed to load intershard memory. Resetting.');
+            RawMemory.interShardSegment = JSON.stringify(SharedMem);
+        }
         _.each(Mem.interShardMutations, (mutation: any[]) => {
-            const [action, prop] = mutation;
+            const [action, path] = mutation;
             if(action === 'd'){
-                delete SharedMem[prop];
+                let prop, obj = SharedMem;
+                while(path.length > 1){
+                    prop = path.shift();
+                    obj = obj[prop];
+                }
+                delete obj[path.shift()];
             }else if(action === 's'){
-                SharedMem[prop] = mutation[2];
+                let prop, obj = SharedMem;
+                while(prop = path.shift()){
+                    obj = obj[prop];
+                }
+                obj = mutation[2];
             }else{
                 Log.warning(`Invalid intershard mutation: ${action}`);
             }

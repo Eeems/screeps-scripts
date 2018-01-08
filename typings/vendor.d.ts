@@ -17,3 +17,14 @@ declare namespace NodeJS {
 declare module "uglify-js" {
     export interface MinifyOptions {}
 }
+
+interface Game {
+    shard: {
+        name: string;
+        type: string;
+        ptr: boolean;
+    }
+}
+interface RawMemory {
+    interShardSegment: string;
+}
