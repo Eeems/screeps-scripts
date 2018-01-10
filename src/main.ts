@@ -29,5 +29,4 @@ export function loop(){
     Log.group()
     Log.info(`Bucket: ${Game.cpu.bucket}`);
     Log.info(`Usage: ${Game.cpu.getUsed()}`);
-    Log.reset(); // Resetting is quicker than calling ungroup twice
 }
