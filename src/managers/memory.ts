@@ -3,11 +3,6 @@ import * as config from '../config';
 import {CompressionManager as compression} from './compression';
 import * as DeepProxy from 'proxy-deep';
 
-const shards = [
-    'shard0',
-    'shard1',
-    'shard2'
-];
 let Mem: any = {
         segments: {},
         activeSegments: [], // limit 10
@@ -158,7 +153,8 @@ export class MemoryManager{
     }
     private static saveInterShard(){
         if(SharedMem.shard === Game.shard.name){
-            const i = shards.indexOf(Game.shard.name) + 1;
+            const shards = _.keys(Game.cpu.shardLimits),
+                i = shards.indexOf(Game.shard.name) + 1;
             SharedMem.shard = shards[i < shards.length ? i : 0];
             RawMemory.interShardSegment = JSON.stringify(SharedMem);
             Mem.interShardMutations = [];
