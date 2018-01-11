@@ -9,7 +9,8 @@ let Mem: any = {
         interShardMutations: []
     },
     SharedMem: any = {
-        shard: Game.shard.name
+        shard: Game.shard.name,
+        lock: (+new Date())+20000 // 20s
     };
 const EmptyMemory = {
     creeps: {},
@@ -123,25 +124,24 @@ export class MemoryManager{
     private static saveCompressed(){
         Memory.compressed = this.toString();
     }
-    private static loadInterShard(){
+    private static getInterShardData(){
         try{
-            SharedMem = JSON.parse(RawMemory.interShardSegment);
+            var sharedMem = JSON.parse(RawMemory.interShardSegment);
         }catch(e){
             Log.error(e);
-            Log.panic('Failed to load intershard memory. Resetting.');
-            RawMemory.interShardSegment = JSON.stringify(SharedMem);
+            return null;
         }
         _.each(Mem.interShardMutations, (mutation: any[]) => {
             const [action, path] = mutation;
             if(action === 'd'){
-                let prop, obj = SharedMem;
+                let prop, obj = sharedMem;
                 while(path.length > 1){
                     prop = path.shift();
                     obj = obj[prop];
                 }
                 delete obj[path.shift()];
             }else if(action === 's'){
-                let prop, obj = SharedMem;
+                let prop, obj = sharedMem;
                 while(prop = path.shift()){
                     obj = obj[prop];
                 }
@@ -150,14 +150,32 @@ export class MemoryManager{
                 Log.warning(`Invalid intershard mutation: ${action}`);
             }
         });
+        return sharedMem;
     }
-    private static saveInterShard(){
-        if(SharedMem.shard === Game.shard.name){
+    private static loadInterShard(){
+        const sharedMem = this.getInterShardData();
+        if(!sharedMem){
+            Log.panic('Failed to load intershard memory.');
+            Log.panic('Resetting intershard memory.');
+            RawMemory.interShardSegment = JSON.stringify(SharedMem);
+            if(!this.getInterShardData()){
+                Log.panic('Failed to reset intershard memory. Intershard communication may fail.');
+            }
+        }else{
+            SharedMem = sharedMem;
+        }
+    }
+    private static saveInterShard(force: boolean = false){
+        this.loadInterShard();
+        if(SharedMem.shard === Game.shard.name || force){
             const shards = _.keys(Game.cpu.shardLimits),
                 i = shards.indexOf(Game.shard.name) + 1;
             SharedMem.shard = shards[i < shards.length ? i : 0];
+            SharedMem.lock = (+new Date()) + 20000; // 20s
             RawMemory.interShardSegment = JSON.stringify(SharedMem);
             Mem.interShardMutations = [];
+        }else if(SharedMem.lock < +new Date()){
+            this.saveInterShard(true);
         }
     }
     private static flush(){

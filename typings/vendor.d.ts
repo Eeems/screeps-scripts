@@ -25,6 +25,9 @@ interface Game {
         ptr: boolean;
     }
 }
+interface CPU {
+    shardLimits: {[shard:string]: number}
+}
 interface RawMemory {
     interShardSegment: string;
 }
