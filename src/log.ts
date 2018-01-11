@@ -53,6 +53,7 @@ export class Log{
     }
     public static panic(msg: any): void{
         console.log(`${indentCol(indentLevel)}${typeCol('panic')} ${msg}`);
+        Game.notify(`PANIC: ${msg}`, 10);
     }
     public static group(): void{
         indentLevel++;
