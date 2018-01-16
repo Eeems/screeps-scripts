@@ -10,7 +10,7 @@ let Mem: any = {
     },
     SharedMem: any = {
         shard: Game.shard.name,
-        lock: (+new Date())+20000 // 20s
+        lock: (+new Date())
     };
 const EmptyMemory = {
     creeps: {},
@@ -167,35 +167,27 @@ export class MemoryManager{
     }
     private static saveInterShard(){
         this.loadInterShard();
-        if(SharedMem.shard === Game.shard.name){
-            SharedMem.shard = this.nextInterShard(Game.shard.name);
-            SharedMem.lock = this.nextInterShardLock();
+        const shards = _.keys(Game.cpu.shardLimits);
+        if(SharedMem.shard === Game.shard.name || SharedMem.lock + this.interShardInterval(shards) < +new Date()){
+            const i = shards.indexOf(Game.shard.name) + 1;
+            SharedMem.shard = shards[i < shards.length ? i : 0];
+            SharedMem.lock = +new Date();
             RawMemory.interShardSegment = JSON.stringify(SharedMem);
             Mem.interShardMutations = [];
-        }else if(SharedMem.lock < +new Date()){
-            const shard = this.nextInterShard(SharedMem.shard);
-            if(shard === Game.shard.name){
-                SharedMem.shard = shard;
-                SharedMem.lock =this.nextInterShardLock();
-                RawMemory.interShardSegment = JSON.stringify(SharedMem);
-                Mem.interShardMutations = [];
-            }
-            //@todo shard timeout looping better
         }
     }
-    private static getShards(): string[]{
-        return _.keys(Game.cpu.shardLimits);
-    }
-    private static nextInterShardLock(): number{
-        return (+new Date()) + 20000; // 20s
-    }
-    private static nextInterShardIdx(name: string): number{
-        return this.getShards().indexOf(name) + 1
-    }
-    private static nextInterShard(name: string): string{
-        const shards = this.getShards(),
-            i = this.nextInterShardIdx(name);
-        return shards[i < shards.length ? i : 0];
+    private static interShardInterval(shards: string[]): number{
+        let i = 1,
+            idx, name;
+        do{
+            idx = shards.indexOf(shards[idx]) + 1;
+            name = shards[idx];
+            if(name === Game.shard.name){
+                break;
+            }
+            i++;
+        }
+        return i * 2000;
     }
     private static flush(){
         _.each(_.keys(this.segments), (id: number) => {
