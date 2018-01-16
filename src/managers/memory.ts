@@ -165,18 +165,37 @@ export class MemoryManager{
             SharedMem = sharedMem;
         }
     }
-    private static saveInterShard(force: boolean = false){
+    private static saveInterShard(){
         this.loadInterShard();
-        if(SharedMem.shard === Game.shard.name || force){
-            const shards = _.keys(Game.cpu.shardLimits),
-                i = shards.indexOf(Game.shard.name) + 1;
-            SharedMem.shard = shards[i < shards.length ? i : 0];
-            SharedMem.lock = (+new Date()) + 20000; // 20s
+        if(SharedMem.shard === Game.shard.name){
+            SharedMem.shard = this.nextInterShard(Game.shard.name);
+            SharedMem.lock = this.nextInterShardLock();
             RawMemory.interShardSegment = JSON.stringify(SharedMem);
             Mem.interShardMutations = [];
         }else if(SharedMem.lock < +new Date()){
-            this.saveInterShard(true);
+            const shard = this.nextInterShard(SharedMem.shard);
+            if(shard === Game.shard.name){
+                SharedMem.shard = shard;
+                SharedMem.lock =this.nextInterShardLock();
+                RawMemory.interShardSegment = JSON.stringify(SharedMem);
+                Mem.interShardMutations = [];
+            }
+            //@todo shard timeout looping better
         }
+    }
+    private static getShards(): string[]{
+        return _.keys(Game.cpu.shardLimits);
+    }
+    private static nextInterShardLock(): number{
+        return (+new Date()) + 20000; // 20s
+    }
+    private static nextInterShardIdx(name: string): number{
+        return this.getShards().indexOf(name) + 1
+    }
+    private static nextInterShard(name: string): string{
+        const shards = this.getShards(),
+            i = this.nextInterShardIdx(name);
+        return shards[i < shards.length ? i : 0];
     }
     private static flush(){
         _.each(_.keys(this.segments), (id: number) => {
