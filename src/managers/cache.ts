@@ -7,6 +7,7 @@ export class CacheManager{
     public static hostiles: {[roomName: string]: {[structureType: string]: Creep[]}};
     public static fleeObjects: {[roomName: string]: RoomObject[]};
     public static lairThreats: {[roomName: string]: StructureKeeperLair[]};
+    public static summarizedRooms: any;
 
     public static setup(){
         this.init();
@@ -25,6 +26,7 @@ export class CacheManager{
             this.hostiles = {};
             this.fleeObjects = {};
             this.lairThreats = {};
+            this.summarizedRooms = null;
             if(!Memory.uuids[global.uuid]){
                 Memory.uuids[global.uuid] = {
                     first: Game.time,
