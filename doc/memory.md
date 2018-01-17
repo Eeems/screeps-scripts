@@ -14,3 +14,7 @@ compressed memory. When its segment is available and has been flushed, it will b
 removed. This is possible since memory is limited to 2MB and each segment is only
 100KB. We will have to be careful to manage our main memory usage, but with proper
 care there will be enough room to properly handle this.
+
+Intershard Segment
+==================
+

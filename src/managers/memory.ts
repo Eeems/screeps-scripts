@@ -177,16 +177,13 @@ export class MemoryManager{
         }
     }
     private static interShardInterval(shards: string[]): number{
-        let i = 1,
+        let i = 0,
             idx, name;
         do{
+            i++;
             idx = shards.indexOf(shards[idx]) + 1;
             name = shards[idx];
-            if(name === Game.shard.name){
-                break;
-            }
-            i++;
-        }
+        }while(name !== Game.shard.name);
         return i * 2000;
     }
     private static flush(){
