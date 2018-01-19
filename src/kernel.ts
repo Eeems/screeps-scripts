@@ -1,12 +1,13 @@
 import {Log} from './log';
-import {cache, memory, compression, stats} from './managers/';
+import {cache, memory, compression, stats, profile} from './managers/';
 
 export class Kernel{
     public static managers = {
         cache,
         memory,
         compression,
-        stats
+        stats,
+        profile
     };
     public static setup(){
         if(!global.Kernel){
@@ -16,12 +17,14 @@ export class Kernel{
         Log.info('Setup');
         Log.group();
         memory.setup();
+        profile.setup();
         cache.setup();
         Log.ungroup();
     }
     public static init(){
         Log.info('Init');
         Log.group();
+        profile.init();
         memory.init();
         cache.init();
         Log.ungroup();
@@ -36,6 +39,7 @@ export class Kernel{
         Log.group();
         memory.deinit();
         stats.deinit();
+        profile.deinit();
         Log.ungroup();
     }
 }

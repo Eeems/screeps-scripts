@@ -124,8 +124,11 @@ export class StatsManager{
             };
         }
     }
-    private static sourceContainers(sources: Source[]): Source[]{
-        // @todo filter
-        return sources;
+    private static sourceContainers(sources: Source[]): StructureContainer[]{
+        return _.reduce(sources, (containers: StructureContainer[], source: Source) => {
+            return _.merge(containers, source.pos.findInRange(FIND_STRUCTURES, 2, {
+                filter: (s: Structure) => s.structureType == STRUCTURE_CONTAINER && s.pos.getRangeTo(source) >= 2.0
+            }));
+        }, []);
     }
 }

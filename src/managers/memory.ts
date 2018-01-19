@@ -56,7 +56,7 @@ export class MemoryManager{
     public static setup(){
         Log.debug('Memory setup');
         this.loadCompressed();
-        _.defaults(Memory, EmptyMemory)
+        _.defaults(Memory, EmptyMemory);
         this.flush();
         this.saveCompressed();
         this.loadInterShard();
