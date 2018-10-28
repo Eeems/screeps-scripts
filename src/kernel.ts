@@ -32,6 +32,7 @@ export class Kernel{
     public static run(){
         Log.info('Run');
         Log.group();
+        // Todo - Add run code
         Log.ungroup();
     }
     public static deinit(){

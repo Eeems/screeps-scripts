@@ -135,36 +135,35 @@ export class MemoryManager{
         Memory.compressed = this.toString();
     }
     private static getInterShardData(){
-        let sharedMem;
         try{
-            sharedMem = JSON.parse(RawMemory.interShardSegment);
+            const sharedMem = JSON.parse(RawMemory.interShardSegment);
+            _.each(Mem.interShardMutations, (mutation: any[]) => {
+                const [action, path] = mutation;
+                if(action === 'd'){
+                    let prop, obj = sharedMem;
+                    while(path.length > 1){
+                        prop = path.shift();
+                        obj = obj[prop];
+                    }
+                    delete obj[path.shift()];
+                }else if(action === 's'){
+                    let prop, obj = sharedMem;
+                    do{
+                        prop = path.shift();
+                        if(prop){
+                            obj = obj[prop];
+                        }
+                    }while(prop);
+                    obj = mutation[2];
+                }else{
+                    Log.warning(`Invalid intershard mutation: ${action}`);
+                }
+            });
+            return sharedMem;
         }catch(e){
             Log.error(e);
             return null;
         }
-        _.each(Mem.interShardMutations, (mutation: any[]) => {
-            const [action, path] = mutation;
-            if(action === 'd'){
-                let prop, obj = sharedMem;
-                while(path.length > 1){
-                    prop = path.shift();
-                    obj = obj[prop];
-                }
-                delete obj[path.shift()];
-            }else if(action === 's'){
-                let prop, obj = sharedMem;
-                do{
-                    prop = path.shift();
-                    if(prop){
-                        obj = obj[prop];
-                    }
-                }while(prop);
-                obj = mutation[2];
-            }else{
-                Log.warning(`Invalid intershard mutation: ${action}`);
-            }
-        });
-        return sharedMem;
     }
     private static loadInterShard(){
         const sharedMem = this.getInterShardData();
