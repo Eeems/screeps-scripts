@@ -1,7 +1,7 @@
-import './plugins/';
-import './prototypes/';
 import {Kernel} from './kernel';
 import {Log} from './log';
+import './plugins/';
+import './prototypes/';
 
 Kernel.setup();
 
@@ -26,7 +26,7 @@ export function loop(){
     Log.reset();
     Log.group();
     Log.info('Statistics');
-    Log.group()
+    Log.group();
     Log.info(`Bucket: ${Game.cpu.bucket}`);
     Log.info(`Usage: ${Game.cpu.getUsed()}`);
 }

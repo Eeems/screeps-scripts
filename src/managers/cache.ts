@@ -1,4 +1,4 @@
-import * as uuid from 'uuid/v1';
+import * as Uuid from 'uuid/v1';
 
 export class CacheManager{
     public static tick: number;
@@ -14,7 +14,7 @@ export class CacheManager{
     }
     public static init(){
         if(!global.uuid){
-            global.uuid = uuid();
+            global.uuid = Uuid();
             if(!Memory.uuids){
                 Memory.uuids = {};
             }
@@ -39,7 +39,7 @@ export class CacheManager{
         }
     }
     public static clean(){
-        for(var uuid of _.keys(Memory.uuids)){
+        for(const uuid of _.keys(Memory.uuids)){
             if(Game.time - Memory.uuids[uuid].last > 120){
                 delete Memory.uuids[uuid];
             }

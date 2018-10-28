@@ -53,7 +53,7 @@ export class ProfileManager{
             if(descriptor && !descriptor.get && !descriptor.set){
                 const original = descriptor.value;
                 if(original && typeof original === 'function'){
-                    className = className || obj.constructor ? `${obj.constructor.name}` : "";
+                    className = className || obj.constructor ? `${obj.constructor.name}` : '';
                 }
                 const memKey = `${className}:${key}`,
                     savedName = `__${key}__`;

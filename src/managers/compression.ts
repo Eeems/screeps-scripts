@@ -2,12 +2,12 @@ import * as Compression from '../compression/';
 import * as Serialization from '../serialization/';
 
 interface Compressor{
-    compress: (data: string) => string,
-    decompress: (data: string) => string
+    compress: (data: string) => string;
+    decompress: (data: string) => string;
 }
 interface Serializer{
-    decode: (data: string) => any,
-    encode: (data: any) => string
+    decode: (data: string) => any;
+    encode: (data: any) => string;
 }
 
 export class CompressionManager{

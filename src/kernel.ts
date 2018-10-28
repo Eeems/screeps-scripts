@@ -1,5 +1,5 @@
 import {Log} from './log';
-import {cache, memory, compression, stats, profile} from './managers/';
+import {cache, compression, memory, profile, stats} from './managers/';
 
 export class Kernel{
     public static managers = {

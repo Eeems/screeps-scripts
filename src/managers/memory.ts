@@ -1,7 +1,7 @@
-import {Log} from '../log';
-import * as config from '../config';
-import {CompressionManager as compression} from './compression';
 import * as DeepProxy from 'proxy-deep';
+import * as config from '../config';
+import {Log} from '../log';
+import {CompressionManager as compression} from './compression';
 
 let Mem: any = {
         segments: {},
@@ -21,26 +21,6 @@ const EmptyMemory = {
 };
 
 export class MemoryManager{
-    private static _shared = new DeepProxy(SharedMem, {
-        get(target, property, receiver){
-            const val = Reflect.get(target, property, receiver);
-            if(typeof val === 'object' && val !== null){
-                return this.nest();
-            }else{
-                return val;
-            }
-        },
-        set(target, property, value, receiver){
-            Mem.interShardMutations.push(['s', this.path, value]);
-            target[property] = value;
-            return true;
-        },
-        deleteProperty(target, property){
-            const success = delete target[property];
-            success && Mem.interShardMutations.push(['d', this.path]);
-            return success;
-        }
-    });
     public static get mem(): any{
         return Mem;
     }
@@ -79,16 +59,24 @@ export class MemoryManager{
     }
     public static gc(){
         _.each(_.keys(Memory.creeps), (name) => {
-            !Game.creeps[name] && delete Memory.creeps[name];
+            if(!Game.creeps[name]){
+                delete Memory.creeps[name];
+            }
         });
         _.each(_.keys(Memory.rooms), (name) => {
-            !Game.rooms[name] && delete Memory.rooms[name];
+            if(!Game.rooms[name]){
+                delete Memory.rooms[name];
+            }
         });
         _.each(_.keys(Memory.flags), (name) => {
-            !Game.flags[name] && delete Memory.flags[name];
+            if(!Game.flags[name]){
+                delete Memory.flags[name];
+            }
         });
         _.each(_.keys(Memory.spawns), (name) => {
-            !Game.spawns[name] && delete Memory.spawns[name];
+            if(!Game.spawns[name]){
+                delete Memory.spawns[name];
+            }
         });
     }
     public static toJSON(): any{
@@ -112,6 +100,28 @@ export class MemoryManager{
         }
         return false;
     }
+    private static _shared = new DeepProxy(SharedMem, {
+        get(target, property, receiver){
+            const val = Reflect.get(target, property, receiver);
+            if(typeof val === 'object' && val !== null){
+                return this.nest();
+            }else{
+                return val;
+            }
+        },
+        set(target, property, value, receiver){
+            Mem.interShardMutations.push(['s', this.path, value]);
+            target[property] = value;
+            return true;
+        },
+        deleteProperty(target, property){
+            const success = delete target[property];
+            if(success){
+                Mem.interShardMutations.push(['d', this.path]);
+            }
+            return success;
+        }
+    });
     private static loadCompressed(){
         try{
             Mem = this.toJSON();
@@ -125,8 +135,9 @@ export class MemoryManager{
         Memory.compressed = this.toString();
     }
     private static getInterShardData(){
+        let sharedMem;
         try{
-            var sharedMem = JSON.parse(RawMemory.interShardSegment);
+            sharedMem = JSON.parse(RawMemory.interShardSegment);
         }catch(e){
             Log.error(e);
             return null;
@@ -142,9 +153,12 @@ export class MemoryManager{
                 delete obj[path.shift()];
             }else if(action === 's'){
                 let prop, obj = sharedMem;
-                while(prop = path.shift()){
-                    obj = obj[prop];
-                }
+                do{
+                    prop = path.shift();
+                    if(prop){
+                        obj = obj[prop];
+                    }
+                }while(prop);
                 obj = mutation[2];
             }else{
                 Log.warning(`Invalid intershard mutation: ${action}`);

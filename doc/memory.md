@@ -13,8 +13,10 @@ in the same tick. What we can do though is temporarily store segment writes in t
 compressed memory. When its segment is available and has been flushed, it will be
 removed. This is possible since memory is limited to 2MB and each segment is only
 100KB. We will have to be careful to manage our main memory usage, but with proper
-care there will be enough room to properly handle this.
+care there will be enough room to properly handle this. It should be noted that
+memory is shared by all shards, so extra care will be needed if operating on more
+than one shard.
 
 Intershard Segment
 ==================
-
+The Intershard segment is tricky.
